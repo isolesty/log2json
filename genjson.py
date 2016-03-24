@@ -10,6 +10,7 @@ if __name__ == '__main__':
     """
     poolfilere = re.compile(" files needed:(.+)")
     archre = re.compile(" files needed:.+_.+_(.+).deb")
+    sourcere = re.compile(" files needed:.+.dsc.*")
     newre = re.compile("'(.+)': newly installed as '(.+)' \(from '(.+)'\):")
     updatere = re.compile(
         "'(.+)': '(.+)' will be upgraded to '(.+)' \(from '(.+)'\):")
@@ -50,7 +51,11 @@ if __name__ == '__main__':
                     debnewversion = debdata[1]
                     debrepo = debdata[2]
                     deburl = poolfilere.findall(fileline)[0].strip().split(' ')
-                    debarch = archre.findall(fileline)[0]
+                    debarch = 'unknown'
+                    if sourcere.findall(fileline):
+                        debarch = 'source'
+                    elif archre.findall(fileline):
+                        debarch = archre.findall(fileline)[0]
 
                     tojson = {
                         'name': debname,
@@ -75,7 +80,11 @@ if __name__ == '__main__':
                     deboldversion = debdata[2]
                     debrepo = debdata[3]
                     deburl = poolfilere.findall(fileline)[0].strip().split(' ')
-                    debarch = archre.findall(fileline)[0]
+                    debarch = 'unknown'
+                    if sourcere.findall(fileline):
+                        debarch = 'source'
+                    elif archre.findall(fileline):
+                        debarch = archre.findall(fileline)[0]
 
                     tojson = {
                         'name': debname,
