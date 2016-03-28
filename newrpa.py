@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import re
 import sys
 import json
 import os
@@ -12,7 +11,7 @@ import hashlib
 from datetime import datetime
 
 
-DEBUG = 1
+DEBUG = 0
 
 
 def log_print(output):
@@ -26,6 +25,7 @@ def gen_md5(str):
 
 if __name__ == '__main__':
     # usage:
+    # newpra.py xxx.json ppa-baseurl
     # newrpa.py result.json http://pools.corp.deepin.com/ppa/debian0311/
 
     if len(sys.argv) > 1:
@@ -74,12 +74,32 @@ if __name__ == '__main__':
                     with open("deb/" + os.path.basename(x), 'b+w') as f:
                         f.write(g.read())
 
-        # make a new rpa
-        os.system("cp -r /tmp/rpabase " + rpapath)
+        # make a new rpa from template
+        os.system("cp -r /mnt/mirror-snapshot/utils/rpabase " + rpapath)
+        # os.system("cp -r /tmp/rpabase " + rpapath)
         os.chdir(rpapath)
         # includedsc only one .dsc file each time
         dsccmd = 'find ' + TMPDIR + '/src/ -name "*.dsc" -exec reprepro -b ' + \
-            rpapath + ' includedsc unstable {} \;'
-        log_print(dsccmd)
+            rpapath + ' includedsc unstable {} \; >/dev/null 2>&1'
         os.system(dsccmd)
-        os.system("reprepro -b . includedeb unstable " + TMPDIR + "/deb/*.deb")
+        os.system("reprepro -b . includedeb unstable " +
+                  TMPDIR + "/deb/*.deb >/dev/null 2>&1")
+
+        # to rpa
+        basedir = "/srv/pool/base/rpa/" + rpaname
+        wwwdir = "/srv/pool/www/rpa/" + rpaname
+        # basedir = "/tmp/base/rpa/" + rpaname
+        # wwwdir = "/tmp/www/rpa/" + rpaname
+        os.system("mkdir " + basedir)
+        os.system("cp -rf " + rpapath + "/db " + basedir + "/")
+        os.system("cp -rf " + rpapath + "/conf " + basedir + "/")
+        os.system("mkdir " + wwwdir)
+        os.system("cp -rf " + rpapath + "/dists " + wwwdir + "/")
+        os.system("cp -rf " + rpapath + "/pool " + wwwdir + "/")
+
+        # clean
+        os.system("rm -rf " + TMPDIR)
+        os.system("rm -rf " + rpapath)
+
+        # end, print the rpaname
+        print(rpaname)
