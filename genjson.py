@@ -76,8 +76,8 @@ if __name__ == '__main__':
                     x += 1
                     debdata = updatere.findall(baseline)[0]
                     debname = debdata[0]
-                    debnewversion = debdata[1]
-                    deboldversion = debdata[2]
+                    deboldversion = debdata[1]
+                    debnewversion = debdata[2]
                     debrepo = debdata[3]
                     deburl = poolfilere.findall(fileline)[0].strip().split(' ')
                     debarch = 'unknown'
