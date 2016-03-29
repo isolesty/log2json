@@ -32,6 +32,9 @@ if __name__ == '__main__':
             # Updates needed for 'unstable|non-free|source':
             if logfile[x].startswith('Updates'):
                 pass
+            # at the end of file, only one line is the wrong line
+            elif x == filelen - 1:
+                pass
             else:
                 # examples: (words wrap , files needed: should be the same line of pool/xxx )
                 # 'linux-manual-4.4': newly installed as '4.4.4-2' (from 'debian'):
