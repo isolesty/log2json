@@ -88,6 +88,11 @@ if __name__ == '__main__':
         # to rpa
         basedir = "/srv/pool/base/rpa/" + rpaname
         wwwdir = "/srv/pool/www/rpa/" + rpaname
+
+        # output the result json
+        with open(wwwdir + '/checkupdate/result.json', 'w') as f:
+            json.dump(data, f)
+
         # basedir = "/tmp/base/rpa/" + rpaname
         # wwwdir = "/tmp/www/rpa/" + rpaname
         os.system("mkdir " + basedir)
@@ -96,6 +101,7 @@ if __name__ == '__main__':
         os.system("mkdir " + wwwdir)
         os.system("cp -rf " + rpapath + "/dists " + wwwdir + "/")
         os.system("cp -rf " + rpapath + "/pool " + wwwdir + "/")
+        os.system("cp -rf " + rpapath + "/checkupdate " + wwwdir + "/")
 
         # clean
         os.system("rm -rf " + TMPDIR)
