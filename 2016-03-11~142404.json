@@ -1,52 +1,52 @@
 {
 	"time": "2016-03-11~142404",
 	"details": [{
-		"oldversion": "0",
-		"type": "add",
+		"arch": "all",
 		"filelist": ["pool/main/p/php-defaults/php-xml_7.0+35_all.deb"],
 		"newversion": "1:7.0+35",
 		"name": "php-xml",
-		"arch": "all",
-		"repo": "debian"
+		"repo": "debian",
+		"type": "add",
+		"oldversion": "0"
 	}, {
-		"oldversion": "200407-2",
-		"type": "update",
+		"arch": "source",
 		"filelist": ["pool/non-free/e/ebook-dev-alp/ebook-dev-alp_200407-2.dsc", "pool/non-free/e/ebook-dev-alp/ebook-dev-alp_200407.orig.tar.gz", "pool/non-free/e/ebook-dev-alp/ebook-dev-alp_200407-2.diff.gz"],
-		"newversion": "200407-1",
+		"newversion": "200407-2",
 		"name": "ebook-dev-alp",
-		"arch": "source",
-		"repo": "debian"
-	}, {
-		"oldversion": "2015-12-31.v8-1",
+		"repo": "debian",
 		"type": "update",
+		"oldversion": "200407-1"
+	}, {
+		"arch": "source",
 		"filelist": ["pool/non-free/g/gmap/gmap_2015-12-31.v8-1.dsc", "pool/non-free/g/gmap/gmap_2015-12-31.v8.orig.tar.gz", "pool/non-free/g/gmap/gmap_2015-12-31.v8-1.debian.tar.xz"],
-		"newversion": "2015-12-31.v7-1",
+		"newversion": "2015-12-31.v8-1",
 		"name": "gmap",
-		"arch": "source",
-		"repo": "debian"
-	}, {
-		"oldversion": "3.67-3.1",
+		"repo": "debian",
 		"type": "update",
+		"oldversion": "2015-12-31.v7-1"
+	}, {
+		"arch": "source",
 		"filelist": ["pool/non-free/l/lgrind/lgrind_3.67-3.1.dsc", "pool/non-free/l/lgrind/lgrind_3.67.orig.tar.gz", "pool/non-free/l/lgrind/lgrind_3.67-3.1.diff.gz"],
-		"newversion": "3.67-3",
+		"newversion": "3.67-3.1",
 		"name": "lgrind",
-		"arch": "source",
-		"repo": "debian"
-	}, {
-		"oldversion": "1.0.4-2",
+		"repo": "debian",
 		"type": "update",
+		"oldversion": "3.67-3"
+	}, {
+		"arch": "amd64",
 		"filelist": ["pool/main/p/php-uuid/php-uuid_1.0.4-2_amd64.deb"],
-		"newversion": "1.0.4-1",
+		"newversion": "1.0.4-2",
 		"name": "php-uuid",
-		"arch": "amd64",
-		"repo": "debian"
-	}, {
-		"oldversion": "2.4.0-1",
+		"repo": "debian",
 		"type": "update",
-		"filelist": ["pool/main/x/xdebug/php-xdebug_2.4.0-1_amd64.deb"],
-		"newversion": "2.4.0~rc4-1",
-		"name": "php-xdebug",
+		"oldversion": "1.0.4-1"
+	}, {
 		"arch": "amd64",
-		"repo": "debian"
+		"filelist": ["pool/main/x/xdebug/php-xdebug_2.4.0-1_amd64.deb"],
+		"newversion": "2.4.0-1",
+		"name": "php-xdebug",
+		"repo": "debian",
+		"type": "update",
+		"oldversion": "2.4.0~rc4-1"
 	}]
 }

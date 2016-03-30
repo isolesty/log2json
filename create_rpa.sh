@@ -97,8 +97,8 @@ diff_changelogs(){
 	# changelogs index.html is in rpa base template
 	# result.json is in rpa's checkupdate
 	# diffchangelogs.py output is data.json
-	python3 ${rpa_www_dir}/pool/diffchangelogs.py ${rpa_www_dir}/checkupdate/result.json
-	mv ${rpa_www_dir}/pool/data.json ${rpa_www_dir}/checkupdate/
+	cd ${rpa_www_dir}/pool && python3 diffchangelogs.py ${rpa_www_dir}/checkupdate/result.json
+	mv data.json ${rpa_www_dir}/checkupdate/
 
 	# clean
 	rm ${rpa_www_dir}/pool/diffchangelogs.py

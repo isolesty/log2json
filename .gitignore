@@ -64,4 +64,3 @@ target/
 # local
 *.json
 *.log
-retrigger.sh
