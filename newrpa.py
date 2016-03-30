@@ -45,6 +45,11 @@ if __name__ == '__main__':
         # 'arch': 'source', 'oldversion': '200407-2'}
         jsondetails = data['details']
 
+        # sometimes not any packages updated
+        if not jsondetails:
+            print("There is no packages updated in this checkupdate, exit.")
+            os._exit(1)
+
         # download all files
         baseurl = sys.argv[2]
         rpaname = gen_md5(baseurl + datetime.now().strftime("%Y-%m-%d~%H%M%S"))

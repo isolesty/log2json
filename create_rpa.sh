@@ -86,7 +86,13 @@ checkupdate(){
 
 create_rpa(){
 	rpa_name=$(python3 /mnt/mirror-snapshot/utils/newrpa.py ${www_dir}/checkupdate/${_date}/result.json ${ppa})
-	echo ${rpa_name}
+	if [ x${rpa_name} == 'x' ]; then
+		echo "Create new rpa failed."
+		exit 9
+	else
+		echo ${rpa_name}
+	fi
+	
 }
 
 diff_changelogs(){
@@ -118,10 +124,10 @@ if [[ $1 == 'all' ]]; then
 
 	_date=$(date +%Y-%m-%d~%H%M%S)
 
-	find_dir
-	checkupdate
-	create_rpa
-	diff_changelogs
+	find_dir || exit 1
+	checkupdate || exit 1 
+	create_rpa || exit 1
+	diff_changelogs || exit 1
 
 else
 	Usage
