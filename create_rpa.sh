@@ -113,11 +113,6 @@ diff_changelogs(){
 
 
 merge_rpa(){
-	cd ${www_dir}
-	wget ${ppa}/checkupdate/result.json
-	# mergejson return a merged json instead of base json
-	python3 /mnt/mirror-snapshot/utils/mergejson.py checkupdate/result.json result.json
-
 	#merge
 	cd ${base_dir}
 
@@ -142,6 +137,16 @@ merge_rpa(){
 
 	reprepro --noskipold --basedir ${base_dir} --outdir ${www_dir} update
 
+	if [[ $? == 0 ]]; then
+		# get all result.json
+		cd ${www_dir}
+		wget ${ppa}/checkupdate/result.json
+		# mergejson return a merged json instead of base json
+		python3 /mnt/mirror-snapshot/utils/mergejson.py checkupdate/result.json result.json
+		rpa_name=${base_name}
+	else
+		exit 8
+	fi
 }
 
 # new.sh all base_repo_url base_repo_codename ppa_repo_url ppa_repo_codename
