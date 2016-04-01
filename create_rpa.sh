@@ -34,6 +34,7 @@ find_dir(){
 	        elif [ -d /srv/pool/base/rpa/${base_name} ] && [ -d /srv/pool/www/rpa/${base_name} ]; then
 	            base_dir="/srv/pool/base/rpa/${base_name}"
 	            www_dir="/srv/pool/www/rpa/${base_name}"
+	            TYPE="rpa"
 	        fi
 	        ;;
 	esac
@@ -110,6 +111,39 @@ diff_changelogs(){
 	rm ${rpa_www_dir}/pool/diffchangelogs.py
 }
 
+
+merge_rpa(){
+	cd ${www_dir}
+	wget ${ppa}/checkupdate/result.json
+	# mergejson return a merged json instead of base json
+	python3 /mnt/mirror-snapshot/utils/mergejson.py checkupdate/result.json result.json
+
+	#merge
+	cd ${base_dir}
+
+	ppa_arch=$(/usr/bin/python3 /mnt/mirror-snapshot/utils/getrpa.py ${ppa} ${ppa_codename} "Architectures")
+	ppa_components=$(/usr/bin/python3 /mnt/mirror-snapshot/utils/getrpa.py ${ppa} ${ppa_codename} "Components")
+
+
+	# rewrite conf/updates
+	mv conf/updates conf/updates.orig
+	echo "Name: ${ppa_name}" > ${base_dir}/conf/updates
+	echo "Suite: ${ppa_codename}" >> ${base_dir}/conf/updates
+	echo "Architectures: ${ppa_arch} source" >> ${base_dir}/conf/updates
+	echo "Components: ${ppa_components}" >> ${base_dir}/conf/updates
+	echo "Method: ${ppa}" >> ${base_dir}/conf/updates
+	echo "FilterSrcList:install upstreamer.filter" >> ${base_dir}/conf/updates
+	echo "VerifyRelease: blindtrust" >> ${base_dir}/conf/updates
+
+	sed -i "s#Update:.*#Update: ${ppa_name}#"  ${base_dir}/conf/distributions
+
+	cat ${base_dir}/conf/distributions
+	cat ${base_dir}/conf/updates
+
+	reprepro --noskipold --basedir ${base_dir} --outdir ${www_dir} update
+
+}
+
 # new.sh all base_repo_url base_repo_codename ppa_repo_url ppa_repo_codename
 # example:
 # new.sh all http://packages.deepin.com/deepin unstable http://packages.deepin.com/ppa/debian0311 unstable
@@ -118,6 +152,7 @@ if [[ $1 == 'all' ]]; then
 	base_codename=$3
 	ppa=$4
 	ppa_codename=$5
+	TYPE=''
 
 	base_name=$(basename ${base})
 	ppa_name=$(basename ${ppa})
@@ -125,10 +160,13 @@ if [[ $1 == 'all' ]]; then
 	_date=$(date +%Y-%m-%d~%H%M%S)
 
 	find_dir || exit 1
-	checkupdate || exit 1 
-	create_rpa || exit 1
+	if [[ ${TYPE} == "rpa" ]]; then
+		merge_rpa || exit 1
+	else
+		checkupdate || exit 1
+		create_rpa || exit 1	
+	fi
 	diff_changelogs || exit 1
-
 else
 	Usage
 fi
