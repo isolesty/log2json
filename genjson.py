@@ -109,6 +109,6 @@ if __name__ == '__main__':
             x += 1
 
         time = lognamere.findall(resultlog)[0]
-        resultjson = {'time': time, 'details': newdeb + updatedeb}
+        resultjson = {'time': time, 'details': updatedeb + newdeb}
         with open(time + '.json', 'w') as f:
             json.dump(resultjson, f)
