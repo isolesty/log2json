@@ -21,63 +21,11 @@ host_api=${HOST_API}
 
 base_name=$(basename ${base})
 rpa_name=$(basename ${rpa})
-
-_date=$(date +%Y-%m-%d~%H%M%S)
-
-base_dir=""
-www_dir=""
-
-case $base_name in
-    deepin)
-        base_dir="/mnt/mirror-snapshot/reprepro-base/deepin-2015-process"
-        www_dir="/srv/pool/www/deepin"
-        ;;
-    *)
-        if [ -d /srv/pool/base/${base_name} ] && [ -d /srv/pool/www/${base_name} ];then
-            base_dir="/srv/pool/base/${base_name}"
-            www_dir="/srv/pool/www/${base_name}"
-        elif [ -d /srv/pool/base/ppa/${base_name} ] && [ -d /srv/pool/www/ppa/${base_name} ]; then
-            base_dir="/srv/pool/base/ppa/${base_name}"
-            www_dir="/srv/pool/www/ppa/${base_name}"
-        fi
-        ;;
-esac
+# use pools.corp instead of test.pacakges
+rpa=${rpa/'http://proposed.packages'/'http://pools.corp'}
 
 
-if [ -d ${base_dir} ] && [ -d ${www_dir} ]; then
-    echo "repo dir found."
-else
-    echo "repo dir not found."
-    exit 9
-fi
-
-_check_log=/mnt/mirror-snapshot/checkupdate-logs/${base_name}-check-${_date}.log
-
-cd ${base_dir}
-
-rpa_arch=$(/usr/bin/python3 /mnt/mirror-snapshot/utils/getrpa.py ${rpa} ${rpa_codename} "Architectures")
-rpa_components=$(/usr/bin/python3 /mnt/mirror-snapshot/utils/getrpa.py ${rpa} ${rpa_codename} "Components")
-
-
-# rewrite conf/updates
-mv conf/updates conf/updates.orig
-echo "Name: ${rpa_name}" > ${base_dir}/conf/updates
-echo "Suite: ${rpa_codename}" >> ${base_dir}/conf/updates
-echo "Architectures: ${rpa_arch} source" >> ${base_dir}/conf/updates
-echo "Components: ${rpa_components}" >> ${base_dir}/conf/updates
-echo "Method: ${rpa}" >> ${base_dir}/conf/updates
-echo "FilterSrcList:install upstreamer.filter" >> ${base_dir}/conf/updates
-echo "VerifyRelease: blindtrust" >> ${base_dir}/conf/updates
-
-sed -i "s#Update:.*#Update: ${rpa_name}#"  ${base_dir}/conf/distributions
-
-cat ${base_dir}/conf/distributions
-cat ${base_dir}/conf/updates
-
-reprepro --noskipold --basedir ${base_dir} --outdir ${www_dir} checkupdate | tee  ${_check_log}
-/usr/bin/python3 /mnt/mirror-snapshot/utils/log2json.py ${_check_log}
-
-# rpa should rebuild changelogs diff
+# rpa should rebuild itself and changelogs diff
 if [ -d "/srv/pool/base/rpa/${rpa_name}" ] && [ -d "/srv/pool/www/rpa/${rpa_name}" ]; then
     # use the new result.json in rpa
     rpa_base_dir="/srv/pool/base/rpa/${rpa_name}"
@@ -97,6 +45,60 @@ if [ -d "/srv/pool/base/rpa/${rpa_name}" ] && [ -d "/srv/pool/www/rpa/${rpa_name
     # clean
     rm ${rpa_www_dir}/pool/diffchangelogs.py
 else
+    _date=$(date +%Y-%m-%d~%H%M%S)
+
+    base_dir=""
+    www_dir=""
+
+    case $base_name in
+        deepin)
+            base_dir="/mnt/mirror-snapshot/reprepro-base/deepin-2015-process"
+            www_dir="/srv/pool/www/deepin"
+            ;;
+        *)
+            if [ -d /srv/pool/base/${base_name} ] && [ -d /srv/pool/www/${base_name} ];then
+                base_dir="/srv/pool/base/${base_name}"
+                www_dir="/srv/pool/www/${base_name}"
+            elif [ -d /srv/pool/base/ppa/${base_name} ] && [ -d /srv/pool/www/ppa/${base_name} ]; then
+                base_dir="/srv/pool/base/ppa/${base_name}"
+                www_dir="/srv/pool/www/ppa/${base_name}"
+            fi
+            ;;
+    esac
+
+
+    if [ -d ${base_dir} ] && [ -d ${www_dir} ]; then
+        echo "repo dir found."
+    else
+        echo "repo dir not found."
+        exit 9
+    fi
+
+    _check_log=/mnt/mirror-snapshot/checkupdate-logs/${base_name}-check-${_date}.log
+
+    cd ${base_dir}
+    rpa_arch=$(/usr/bin/python3 /mnt/mirror-snapshot/utils/getrpa.py ${rpa} ${rpa_codename} "Architectures")
+    rpa_components=$(/usr/bin/python3 /mnt/mirror-snapshot/utils/getrpa.py ${rpa} ${rpa_codename} "Components")
+
+
+    # rewrite conf/updates
+    mv conf/updates conf/updates.orig
+    echo "Name: ${rpa_name}" > ${base_dir}/conf/updates
+    echo "Suite: ${rpa_codename}" >> ${base_dir}/conf/updates
+    echo "Architectures: ${rpa_arch} source" >> ${base_dir}/conf/updates
+    echo "Components: ${rpa_components}" >> ${base_dir}/conf/updates
+    echo "Method: ${rpa}" >> ${base_dir}/conf/updates
+    echo "FilterSrcList:install upstreamer.filter" >> ${base_dir}/conf/updates
+    echo "VerifyRelease: blindtrust" >> ${base_dir}/conf/updates
+
+    sed -i "s#Update:.*#Update: ${rpa_name}#"  ${base_dir}/conf/distributions
+
+    cat ${base_dir}/conf/distributions
+    cat ${base_dir}/conf/updates
+
+    reprepro --noskipold --basedir ${base_dir} --outdir ${www_dir} checkupdate | tee  ${_check_log}
+    /usr/bin/python3 /mnt/mirror-snapshot/utils/log2json.py ${_check_log}
+
 	mkdir -p ${www_dir}/checkupdate/${_date}
     mkdir -p ${www_dir}/checkupdate/${review_id}
     ln -s ${www_dir}/checkupdate/${_date} ${www_dir}/checkupdate/${review_id}/${_date}

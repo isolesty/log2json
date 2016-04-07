@@ -74,8 +74,7 @@ checkupdate(){
 	cat ${base_dir}/conf/updates
 
 	reprepro --noskipold --basedir ${base_dir} --outdir ${www_dir} checkupdate | tee  ${_check_log}
-	/usr/bin/python3 /mnt/mirror-snapshot/utils/log2json.py ${_check_log}
-
+	/usr/bin/python3 /mnt/mirror-snapshot/utils/log2json.py ${_check_log} ${base} ${base_codename} ${ppa} ${ppa_codename}
 
 	mkdir -p ${www_dir}/checkupdate/${_date}
 	# mkdir -p ${www_dir}/checkupdate/${review_id}
@@ -93,13 +92,24 @@ create_rpa(){
 	else
 		echo ${rpa_name}
 	fi
-	
 }
+
+
+update_rpa(){
+	rpa_name=$(python3 /mnt/mirror-snapshot/utils/newrpa.py ${www_dir}/checkupdate/${_date}/result.json ${ppa} ${rpaname})
+	if [ x${rpa_name} == 'x' ]; then
+		echo "Create new rpa failed."
+		exit 9
+	else
+		echo ${rpa_name}
+	fi
+}
+
 
 diff_changelogs(){
 	rpa_www_dir="/srv/pool/www/rpa/${rpa_name}"
 	# diffchangelogs.py show all debs in its dir
-	cp /mnt/mirror-snapshot/utils/diffchangelogs.py ${rpa_www_dir}/pool
+	cp /mnt/mirror-snapshot/utils/diffchangelogs.py ${rpa_www_dir}/pool/
 
 	# changelogs index.html is in rpa base template
 	# result.json is in rpa's checkupdate
@@ -172,6 +182,16 @@ if [[ $1 == 'all' ]]; then
 		create_rpa || exit 1	
 	fi
 	diff_changelogs || exit 1
+elif [[ $1 == 'update' ]]; then
+	rpaname=$2
+	jsonfile=$3
+	base=$(python3 /mnt/mirror-snapshot/utils/parserjson.py ${jsonfile} 'base')
+	base_codename=$(python3 /mnt/mirror-snapshot/utils/parserjson.py ${jsonfile} 'basecodename')
+	ppa=$(python3 /mnt/mirror-snapshot/utils/parserjson.py ${jsonfile} 'update')
+	ppa_codename=$(python3 /mnt/mirror-snapshot/utils/parserjson.py ${jsonfile} 'updatecodename')
+
+	find_dir || exit 1
+	update_rpa || exit 1
 else
 	Usage
 fi

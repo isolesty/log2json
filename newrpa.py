@@ -25,12 +25,15 @@ def gen_md5(str):
 
 if __name__ == '__main__':
     # usage:
-    # newpra.py xxx.json ppa-baseurl
+    # newpra.py xxx.json ppa-baseurl [rpaname]
     # newrpa.py result.json http://pools.corp.deepin.com/ppa/debian0311/
+    # [e21b073b0d7d63d4b53c65b235309f37]
 
     if len(sys.argv) > 1:
         # get file list to download
         resultjson = sys.argv[1]
+        baseurl = sys.argv[2]
+
         with open(resultjson, 'r') as f:
             data = json.load(f)
 
@@ -51,8 +54,12 @@ if __name__ == '__main__':
             os._exit(1)
 
         # download all files
-        baseurl = sys.argv[2]
-        rpaname = gen_md5(baseurl + datetime.now().strftime("%Y-%m-%d~%H%M%S"))
+        if len(sys.argv) == 4:
+            rpaname = sys.argv[3]
+        else:
+            rpaname = gen_md5(
+                baseurl + datetime.now().strftime("%Y-%m-%d~%H%M%S"))
+
         rpapath = "/tmp/" + rpaname
         TMPDIR = "/tmp/rpa-" + rpaname
 

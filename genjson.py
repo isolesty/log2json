@@ -21,6 +21,11 @@ if __name__ == '__main__':
 
     if len(sys.argv) > 1:
         resultlog = sys.argv[1]
+        if len(sys.argv) == 6:
+            baserepo = sys.argv[2]
+            baserepocodename = sys.argv[3]
+            updaterepo = sys.argv[4]
+            updaterepocodename = sys.argv[5]
 
         with open(resultlog, 'r') as f:
             logfile = f.readlines()
@@ -110,5 +115,12 @@ if __name__ == '__main__':
 
         time = lognamere.findall(resultlog)[0]
         resultjson = {'time': time, 'details': updatedeb + newdeb}
+        if len(sys.argv) == 6:
+            resultjson = {'time': time,
+                          'details': updatedeb + newdeb,
+                          'base': baserepo,
+                          'basecodename': baserepocodename,
+                          'update': updaterepo,
+                          'updatecodename': updaterepocodename}
         with open(time + '.json', 'w') as f:
             json.dump(resultjson, f)
