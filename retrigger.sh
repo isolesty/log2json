@@ -35,9 +35,6 @@ if [ -d "/srv/pool/base/rpa/${rpa_name}" ] && [ -d "/srv/pool/www/rpa/${rpa_name
     # rebuild this rpa
     /mnt/mirror-snapshot/utils/create_rpa.sh 'update' ${rpa_name} ${rpa_www_dir}/checkupdate/result.json
 
-    # rsync this rpa
-    /home/leaeasy/gs/rpa_sync_testpackages.sh
-
 else
     _date=$(date +%Y-%m-%d~%H%M%S)
 

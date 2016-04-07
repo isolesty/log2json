@@ -97,7 +97,8 @@ create_rpa(){
 
 update_rpa(){
 	# change to rpa dir
-	cd /srv/pool/www/rpa/{rpaname}/
+	rpa_www_dir="/srv/pool/www/rpa/${rpaname}"
+	cd ${rpa_www_dir}
 	rpa_name=$(python3 /mnt/mirror-snapshot/utils/newrpa.py checkupdate/result.json ${ppa} ${rpaname})
 	if [ x${rpa_name} == 'x' ]; then
 		echo "Create new rpa failed."
@@ -194,6 +195,7 @@ elif [[ $1 == 'update' ]]; then
 
 	find_dir || exit 1
 	update_rpa || exit 1
+	diff_changelogs || exit 1
 else
 	Usage
 fi

@@ -104,11 +104,12 @@ if __name__ == '__main__':
         # wwwdir = "/tmp/www/rpa/" + rpaname
 
         if len(sys.argv) == 4:
-            # update rpa has dirs
-            pass
-        else:
-            os.mkdir(basedir)
-            os.mkdir(wwwdir)
+            # update rpa has dirs, remove
+            os.system("rm -rf " + basedir)
+            os.system("rm -rf " + wwwdir)
+
+        os.mkdir(basedir)
+        os.mkdir(wwwdir)
 
         os.system("cp -rf " + rpapath + "/db " + basedir + "/")
         os.system("cp -rf " + rpapath + "/conf " + basedir + "/")
