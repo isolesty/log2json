@@ -103,10 +103,15 @@ if __name__ == '__main__':
         # basedir = "/tmp/base/rpa/" + rpaname
         # wwwdir = "/tmp/www/rpa/" + rpaname
 
-        os.mkdir(basedir)
+        if len(sys.argv) == 4:
+            # update rpa has dirs
+            pass
+        else:
+            os.mkdir(basedir)
+            os.mkdir(wwwdir)
+
         os.system("cp -rf " + rpapath + "/db " + basedir + "/")
         os.system("cp -rf " + rpapath + "/conf " + basedir + "/")
-        os.mkdir(wwwdir)
 
         os.system("cp -rf " + rpapath + "/dists " + wwwdir + "/")
         os.system("cp -rf " + rpapath + "/pool " + wwwdir + "/")
