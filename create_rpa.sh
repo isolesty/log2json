@@ -96,7 +96,9 @@ create_rpa(){
 
 
 update_rpa(){
-	rpa_name=$(python3 /mnt/mirror-snapshot/utils/newrpa.py ${www_dir}/checkupdate/${_date}/result.json ${ppa} ${rpaname})
+	# change to rpa dir
+	cd /srv/pool/www/rpa/{rpaname}/
+	rpa_name=$(python3 /mnt/mirror-snapshot/utils/newrpa.py checkupdate/result.json ${ppa} ${rpaname})
 	if [ x${rpa_name} == 'x' ]; then
 		echo "Create new rpa failed."
 		exit 9

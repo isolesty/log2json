@@ -27,23 +27,17 @@ rpa=${rpa/'http://proposed.packages'/'http://pools.corp'}
 
 # rpa should rebuild itself and changelogs diff
 if [ -d "/srv/pool/base/rpa/${rpa_name}" ] && [ -d "/srv/pool/www/rpa/${rpa_name}" ]; then
-    # use the new result.json in rpa
+
+    # use the result.json in rpa
     rpa_base_dir="/srv/pool/base/rpa/${rpa_name}"
     rpa_www_dir="/srv/pool/www/rpa/${rpa_name}"
 
-    mv ${base_dir}/*.json ${rpa_www_dir}/checkupdate/result.json
+    # rebuild this rpa
+    /mnt/mirror-snapshot/utils/create_rpa.sh 'update' ${rpa_name} ${rpa_www_dir}/checkupdate/result.json
 
-    # diffchangelogs.py show all debs in its dir
-    cp /mnt/mirror-snapshot/utils/diffchangelogs.py ${rpa_www_dir}/pool
+    # rsync this rpa
+    /home/leaeasy/gs/rpa_sync_testpackages.sh
 
-    # changelogs index.html is in rpa base template
-    # result.json is in rpa's checkupdate
-    # diffchangelogs.py output is data.json
-    cd ${rpa_www_dir}/pool && python3 ${rpa_www_dir}/pool/diffchangelogs.py ${rpa_www_dir}/checkupdate/result.json
-    mv ${rpa_www_dir}/pool/data.json ${rpa_www_dir}/checkupdate/
-
-    # clean
-    rm ${rpa_www_dir}/pool/diffchangelogs.py
 else
     _date=$(date +%Y-%m-%d~%H%M%S)
 
