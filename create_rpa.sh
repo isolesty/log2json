@@ -99,7 +99,7 @@ update_rpa(){
 	# change to rpa dir
 	rpa_www_dir="/srv/pool/www/rpa/${rpaname}"
 	cd ${rpa_www_dir}
-	rpa_name=$(python3 /mnt/mirror-snapshot/utils/newrpa.py checkupdate/result.json ${ppa} ${rpaname})
+	rpa_name=$(python3 /mnt/mirror-snapshot/utils/newrpa.py ${www_dir}/checkupdate/${_date}/result.json ${ppa} ${rpaname})
 	if [ x${rpa_name} == 'x' ]; then
 		echo "Create new rpa failed."
 		exit 9
@@ -165,6 +165,8 @@ merge_rpa(){
 # new.sh all base_repo_url base_repo_codename ppa_repo_url ppa_repo_codename
 # example:
 # new.sh all http://packages.deepin.com/deepin unstable http://packages.deepin.com/ppa/debian0311 unstable
+_date=$(date +%Y-%m-%d~%H%M%S)
+
 if [[ $1 == 'all' ]]; then
 	base=$2
 	base_codename=$3
@@ -175,8 +177,7 @@ if [[ $1 == 'all' ]]; then
 	base_name=$(basename ${base})
 	ppa_name=$(basename ${ppa})
 
-	_date=$(date +%Y-%m-%d~%H%M%S)
-
+	
 	find_dir || exit 1
 	if [[ ${TYPE} == "rpa" ]]; then
 		merge_rpa || exit 1
@@ -194,6 +195,7 @@ elif [[ $1 == 'update' ]]; then
 	ppa_codename=$(python3 /mnt/mirror-snapshot/utils/parserjson.py ${jsonfile} 'updatecodename')
 
 	find_dir || exit 1
+	checkupdate || exit 1
 	update_rpa || exit 1
 	diff_changelogs || exit 1
 else
