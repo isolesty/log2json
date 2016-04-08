@@ -194,6 +194,9 @@ elif [[ $1 == 'update' ]]; then
 	ppa=$(python3 /mnt/mirror-snapshot/utils/parserjson.py ${jsonfile} 'update')
 	ppa_codename=$(python3 /mnt/mirror-snapshot/utils/parserjson.py ${jsonfile} 'updatecodename')
 
+	base_name=$(basename ${base})
+	ppa_name=$(basename ${ppa})
+
 	find_dir || exit 1
 	checkupdate || exit 1
 	update_rpa || exit 1

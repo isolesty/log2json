@@ -24,6 +24,7 @@ rpa_name=$(basename ${rpa})
 # use pools.corp instead of test.pacakges
 rpa=${rpa/'http://proposed.packages'/'http://pools.corp'}
 
+bash /mnt/mirror-snapshot/utils/curl_back.sh start checkupdate ${host_api} ${review_id} ${BUILD_URL} 
 
 # rpa should rebuild itself and changelogs diff
 if [ -d "/srv/pool/base/rpa/${rpa_name}" ] && [ -d "/srv/pool/www/rpa/${rpa_name}" ]; then
