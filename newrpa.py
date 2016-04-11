@@ -119,7 +119,7 @@ if __name__ == '__main__':
         os.system("cp -rf " + rpapath + "/checkupdate " + wwwdir + "/")
 
         # get the rpa size
-        sizecmd = "du -sh " + TMPDIR + " 2>/dev/null | awk '{print $1;}'"
+        sizecmd = "du -sh " + TMPDIR + "/pool 2>/dev/null | awk '{print $1;}'"
         rpasize = os.popen(sizecmd).read().strip()
         if rpasize:
             data['size'] = rpasize
