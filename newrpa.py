@@ -118,6 +118,12 @@ if __name__ == '__main__':
         os.system("cp -rf " + rpapath + "/pool " + wwwdir + "/")
         os.system("cp -rf " + rpapath + "/checkupdate " + wwwdir + "/")
 
+        # get the rpa size
+        sizecmd = "du -sh " + TMPDIR + " 2>/dev/null | awk '{print $1;}'"
+        rpasize = os.popen(sizecmd).read()
+        if rpasize:
+            data['size'] = rpasize
+
         # output the result json
         with open(wwwdir + '/checkupdate/result.json', 'w') as f:
             json.dump(data, f)
