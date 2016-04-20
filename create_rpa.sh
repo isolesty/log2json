@@ -179,14 +179,15 @@ script_path="/mnt/mirror-snapshot/utils"
 log_path="/mnt/mirror-snapshot/checkupdate-logs"
 repo_base="/srv/pool/base"
 repo_www="/srv/pool/www"
-
+PPA_TYPE=''
+TYPE=''
 
 if [[ $1 == 'all' ]]; then
 	base=$2
 	base_codename=$3
 	ppa=$4
 	ppa_codename=$5
-	TYPE=''
+	
 
 	base_name=$(basename ${base})
 	ppa_name=$(basename ${ppa})

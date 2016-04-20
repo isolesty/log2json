@@ -6,6 +6,7 @@ base_codename=${BASE_CODENAME}
 rpa=${RPA}
 rpa_codename=${RPA_CODENAME}
 host_api=${HOST_API}
+PPA_TYPE=''
 
 base_name=$(basename ${base})
 rpa_name=$(basename ${rpa})
