@@ -13,6 +13,8 @@ from datetime import datetime
 
 DEBUG = 0
 
+SCRIPTPATH = "/mnt/mirror-snapshot/utils"
+
 
 def log_print(output):
     if DEBUG:
@@ -87,7 +89,7 @@ if __name__ == '__main__':
                         f.write(g.read())
 
         # make a new rpa from template
-        os.system("cp -r /mnt/mirror-snapshot/utils/rpabase " + rpapath)
+        os.system("cp -r " + SCRIPTPATH + "/rpabase " + rpapath)
         # os.system("cp -r /tmp/rpabase " + rpapath)
         os.chdir(rpapath)
         # includedsc only one .dsc file each time

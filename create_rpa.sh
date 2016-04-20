@@ -22,18 +22,18 @@ find_dir(){
 	case $base_name in
 	    deepin)
 	        base_dir="/mnt/mirror-snapshot/reprepro-base/deepin-2015-process"
-	        www_dir="/srv/pool/www/deepin"
+	        www_dir="${repo_www}/deepin"
 	        ;;
 	    *)
-	        if [ -d /srv/pool/base/${base_name} ] && [ -d /srv/pool/www/${base_name} ];then
-	            base_dir="/srv/pool/base/${base_name}"
-	            www_dir="/srv/pool/www/${base_name}"
-	        elif [ -d /srv/pool/base/ppa/${base_name} ] && [ -d /srv/pool/www/ppa/${base_name} ]; then
-	            base_dir="/srv/pool/base/ppa/${base_name}"
-	            www_dir="/srv/pool/www/ppa/${base_name}"
-	        elif [ -d /srv/pool/base/rpa/${base_name} ] && [ -d /srv/pool/www/rpa/${base_name} ]; then
-	            base_dir="/srv/pool/base/rpa/${base_name}"
-	            www_dir="/srv/pool/www/rpa/${base_name}"
+	        if [ -d ${repo_base}/${base_name} ] && [ -d ${repo_www}/${base_name} ];then
+	            base_dir="${repo_base}/${base_name}"
+	            www_dir="${repo_www}/${base_name}"
+	        elif [ -d ${repo_base}/ppa/${base_name} ] && [ -d ${repo_www}/ppa/${base_name} ]; then
+	            base_dir="${repo_base}/ppa/${base_name}"
+	            www_dir="${repo_www}/ppa/${base_name}"
+	        elif [ -d ${repo_base}/rpa/${base_name} ] && [ -d ${repo_www}/rpa/${base_name} ]; then
+	            base_dir="${repo_base}/rpa/${base_name}"
+	            www_dir="${repo_www}/rpa/${base_name}"
 	            TYPE="rpa"
 	        fi
 	        ;;
@@ -50,12 +50,12 @@ find_dir(){
 
 # checkupdate start
 checkupdate(){
-	_check_log=/mnt/mirror-snapshot/checkupdate-logs/${base_name}-check-${_date}.log
+	_check_log=${log_path}/${base_name}-check-${_date}.log
 
 	cd ${base_dir}
 
-	ppa_arch=$(/usr/bin/python3 /mnt/mirror-snapshot/utils/getrpa.py ${ppa} ${ppa_codename} "Architectures")
-	ppa_components=$(/usr/bin/python3 /mnt/mirror-snapshot/utils/getrpa.py ${ppa} ${ppa_codename} "Components")
+	ppa_arch=$(/usr/bin/python3 ${script_path}/getrpa.py ${ppa} ${ppa_codename} "Architectures")
+	ppa_components=$(/usr/bin/python3 ${script_path}/getrpa.py ${ppa} ${ppa_codename} "Components")
 
 
 	# rewrite conf/updates
@@ -65,7 +65,11 @@ checkupdate(){
 	echo "Architectures: ${ppa_arch} source" >> ${base_dir}/conf/updates
 	echo "Components: ${ppa_components}" >> ${base_dir}/conf/updates
 	echo "Method: ${ppa}" >> ${base_dir}/conf/updates
-	echo "FilterSrcList:install upstreamer.filter" >> ${base_dir}/conf/updates
+
+	if [ ${PPA_TYPE} == 'debian' ]; then
+		echo "FilterSrcList:install upstreamer.filter" >> ${base_dir}/conf/updates
+	fi
+	
 	echo "VerifyRelease: blindtrust" >> ${base_dir}/conf/updates
 
 	sed -i "s#Update:.*#Update: ${ppa_name}#"  ${base_dir}/conf/distributions
@@ -74,18 +78,18 @@ checkupdate(){
 	cat ${base_dir}/conf/updates
 
 	reprepro --noskipold --basedir ${base_dir} --outdir ${www_dir} checkupdate | tee  ${_check_log}
-	/usr/bin/python3 /mnt/mirror-snapshot/utils/log2json.py ${_check_log} ${base} ${base_codename} ${ppa} ${ppa_codename}
+	/usr/bin/python3 ${script_path}/log2json.py ${_check_log} ${base} ${base_codename} ${ppa} ${ppa_codename}
 
 	mkdir -p ${www_dir}/checkupdate/${_date}
 	# mkdir -p ${www_dir}/checkupdate/${review_id}
 	# ln -s ${www_dir}/checkupdate/${_date} ${www_dir}/checkupdate/${review_id}/${_date}
-	cp  /mnt/mirror-snapshot/utils/index.html ${www_dir}/checkupdate/${_date}/
+	cp  ${script_path}/index.html ${www_dir}/checkupdate/${_date}/
 	mv ${base_dir}/*.json ${www_dir}/checkupdate/${_date}/result.json
 }
 # checkupdate end
 
 create_rpa(){
-	rpa_name=$(python3 /mnt/mirror-snapshot/utils/newrpa.py ${www_dir}/checkupdate/${_date}/result.json ${ppa})
+	rpa_name=$(python3 ${script_path}/newrpa.py ${www_dir}/checkupdate/${_date}/result.json ${ppa})
 	if [ x${rpa_name} == 'x' ]; then
 		echo "Create new rpa failed."
 		exit 9
@@ -97,9 +101,9 @@ create_rpa(){
 
 update_rpa(){
 	# change to rpa dir
-	rpa_www_dir="/srv/pool/www/rpa/${rpaname}"
+	rpa_www_dir="${repo_www}/rpa/${rpaname}"
 	cd ${rpa_www_dir}
-	rpa_name=$(python3 /mnt/mirror-snapshot/utils/newrpa.py ${www_dir}/checkupdate/${_date}/result.json ${ppa} ${rpaname})
+	rpa_name=$(python3 ${script_path}/newrpa.py ${www_dir}/checkupdate/${_date}/result.json ${ppa} ${rpaname})
 	if [ x${rpa_name} == 'x' ]; then
 		echo "Create new rpa failed."
 		exit 9
@@ -110,9 +114,9 @@ update_rpa(){
 
 
 diff_changelogs(){
-	rpa_www_dir="/srv/pool/www/rpa/${rpa_name}"
+	rpa_www_dir="${repo_www}/rpa/${rpa_name}"
 	# diffchangelogs.py show all debs in its dir
-	cp /mnt/mirror-snapshot/utils/diffchangelogs.py ${rpa_www_dir}/pool/
+	cp ${script_path}/diffchangelogs.py ${rpa_www_dir}/pool/
 
 	# changelogs index.html is in rpa base template
 	# result.json is in rpa's checkupdate
@@ -129,8 +133,8 @@ merge_rpa(){
 	#merge
 	cd ${base_dir}
 
-	ppa_arch=$(/usr/bin/python3 /mnt/mirror-snapshot/utils/getrpa.py ${ppa} ${ppa_codename} "Architectures")
-	ppa_components=$(/usr/bin/python3 /mnt/mirror-snapshot/utils/getrpa.py ${ppa} ${ppa_codename} "Components")
+	ppa_arch=$(/usr/bin/python3 ${script_path}/getrpa.py ${ppa} ${ppa_codename} "Architectures")
+	ppa_components=$(/usr/bin/python3 ${script_path}/getrpa.py ${ppa} ${ppa_codename} "Components")
 
 
 	# rewrite conf/updates
@@ -140,7 +144,11 @@ merge_rpa(){
 	echo "Architectures: ${ppa_arch} source" >> ${base_dir}/conf/updates
 	echo "Components: ${ppa_components}" >> ${base_dir}/conf/updates
 	echo "Method: ${ppa}" >> ${base_dir}/conf/updates
-	echo "FilterSrcList:install upstreamer.filter" >> ${base_dir}/conf/updates
+
+	if [ ${PPA_TYPE} == 'debian' ]; then
+		echo "FilterSrcList:install upstreamer.filter" >> ${base_dir}/conf/updates
+	fi
+	
 	echo "VerifyRelease: blindtrust" >> ${base_dir}/conf/updates
 
 	sed -i "s#Update:.*#Update: ${ppa_name}#"  ${base_dir}/conf/distributions
@@ -155,7 +163,7 @@ merge_rpa(){
 		cd ${www_dir}
 		wget ${ppa}/checkupdate/result.json
 		# mergejson return a merged json instead of base json
-		python3 /mnt/mirror-snapshot/utils/mergejson.py checkupdate/result.json result.json
+		python3 ${script_path}/mergejson.py checkupdate/result.json result.json
 		rpa_name=${base_name}
 	else
 		exit 8
@@ -167,6 +175,12 @@ merge_rpa(){
 # new.sh all http://packages.deepin.com/deepin unstable http://packages.deepin.com/ppa/debian0311 unstable
 _date=$(date +%Y-%m-%d~%H%M%S)
 
+script_path="/mnt/mirror-snapshot/utils"
+log_path="/mnt/mirror-snapshot/checkupdate-logs"
+repo_base="/srv/pool/base"
+repo_www="/srv/pool/www"
+
+
 if [[ $1 == 'all' ]]; then
 	base=$2
 	base_codename=$3
@@ -176,6 +190,10 @@ if [[ $1 == 'all' ]]; then
 
 	base_name=$(basename ${base})
 	ppa_name=$(basename ${ppa})
+	if echo ${ppa_name} | grep debian >/dev/null 2>&1
+	then
+		PPA_TYPE="debian"
+	fi
 
 	
 	find_dir || exit 1
@@ -189,14 +207,18 @@ if [[ $1 == 'all' ]]; then
 elif [[ $1 == 'update' ]]; then
 	rpaname=$2
 	# result.json must be stored in this path
-	jsonfile="/srv/pool/www/rpa/${rpa_name}/checkupdate/result.json"
-	base=$(python3 /mnt/mirror-snapshot/utils/parserjson.py ${jsonfile} 'base')
-	base_codename=$(python3 /mnt/mirror-snapshot/utils/parserjson.py ${jsonfile} 'basecodename')
-	ppa=$(python3 /mnt/mirror-snapshot/utils/parserjson.py ${jsonfile} 'update')
-	ppa_codename=$(python3 /mnt/mirror-snapshot/utils/parserjson.py ${jsonfile} 'updatecodename')
+	jsonfile="${repo_www}/rpa/${rpa_name}/checkupdate/result.json"
+	base=$(python3 ${script_path}/parserjson.py ${jsonfile} 'base')
+	base_codename=$(python3 ${script_path}/parserjson.py ${jsonfile} 'basecodename')
+	ppa=$(python3 ${script_path}/parserjson.py ${jsonfile} 'update')
+	ppa_codename=$(python3 ${script_path}/parserjson.py ${jsonfile} 'updatecodename')
 
 	base_name=$(basename ${base})
 	ppa_name=$(basename ${ppa})
+	if echo ${ppa_name} | grep debian >/dev/null 2>&1
+	then
+		PPA_TYPE="debian"
+	fi
 
 	find_dir || exit 1
 	checkupdate || exit 1
