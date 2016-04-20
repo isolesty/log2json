@@ -12,6 +12,10 @@ base_name=$(basename ${base})
 rpa_name=$(basename ${rpa})
 # use pools.corp instead of test.pacakges
 rpa=${rpa/'http://proposed.packages'/'http://pools.corp'}
+if [ x${rpa_name} == 'x' ]; then
+    echo "rpa name not found."
+    exit 1
+fi
 if echo ${rpa_name} | grep debian >/dev/null 2>&1
 then
     PPA_TYPE="debian"

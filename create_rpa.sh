@@ -207,6 +207,10 @@ if [[ $1 == 'all' ]]; then
 	diff_changelogs || exit 1
 elif [[ $1 == 'update' ]]; then
 	rpaname=$2
+	if [ x${rpaname} == 'x' ]; then
+    	echo "rpa name not found."
+    	exit 1
+	fi
 	# result.json must be stored in this path
 	jsonfile="${repo_www}/rpa/${rpa_name}/checkupdate/result.json"
 	base=$(python3 ${script_path}/parserjson.py ${jsonfile} 'base')

@@ -22,6 +22,10 @@ PPA_TYPE=''
 
 base_name=$(basename ${base})
 rpa_name=$(basename ${rpa})
+if [ x${rpa_name} == 'x' ]; then
+    echo "rpa name not found."
+    exit 1
+fi
 if echo ${rpa_name} | grep debian >/dev/null 2>&1
 then
     PPA_TYPE="debian"
