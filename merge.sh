@@ -1,3 +1,4 @@
+# need a new ci job to run this script
 source params.env
 
 review_id=${REVIEW_ID}
@@ -11,7 +12,7 @@ PPA_TYPE=''
 base_name=$(basename ${base})
 rpa_name=$(basename ${rpa})
 # use pools.corp instead of test.pacakges
-rpa=${rpa/'http://proposed.packages'/'http://pools.corp'}
+# rpa=${rpa/'http://proposed.packages'/'http://pools.corp'}
 if [ x${rpa_name} == 'x' ]; then
     echo "rpa name not found."
     exit 1
@@ -21,10 +22,19 @@ then
     PPA_TYPE="debian"
 fi
 
-script_path="/mnt/mirror-snapshot/utils"
-log_path="/mnt/mirror-snapshot/merge-logs"
-repo_base="/srv/pool/base"
-repo_www="/srv/pool/www"
+if [ ! -f "/usr/share/repo-tools/repo.conf" ]; then
+    echo "conf file not found."
+    exit 1
+else
+    source /usr/share/repo-tools/repo.conf
+fi
+
+# script_path="/mnt/mirror-snapshot/utils"
+# log_path="/mnt/mirror-snapshot/merge-logs"
+# repo_base="/srv/pool/base"
+# repo_www="/srv/pool/www"
+# deepin_base_dir="/mnt/mirror-snapshot/reprepro-base/deepin-2015-process"
+# deepin_www_dir="${repo_www}/deepin"
 
 
 bash ${script_path}/curl_back.sh start merge ${host_api} ${review_id} ${BUILD_URL} 
@@ -40,8 +50,8 @@ trap return_curl EXIT
 
 case $base_name in
     deepin)
-    	base_dir="/mnt/mirror-snapshot/reprepro-base/deepin-2015-process"
-        www_dir="/srv/pool/www/deepin"
+    	base_dir=${deepin_base_dir}
+        www_dir=${deepin_www_dir}
     	cd ${base_dir}
 
         rpa_arch=$(/usr/bin/python3 ${script_path}/getrpa.py ${rpa} ${rpa_codename} "Architectures")
@@ -56,7 +66,7 @@ case $base_name in
         echo "Components: ${rpa_components}" >> ${base_dir}/conf/updates
         echo "Method: ${rpa}" >> ${base_dir}/conf/updates
         echo "VerifyRelease: blindtrust" >> ${base_dir}/conf/updates
-        if [ ${PPA_TYPE} == 'debian' ]; then
+        if [ x${PPA_TYPE} == 'xdebian' ]; then
             echo "FilterSrcList:install upstreamer.filter" >> ${base_dir}/conf/updates
         fi
         sed -i "s#Update:.*#Update: ${rpa_name}#"  ${base_dir}/conf/distributions
@@ -100,7 +110,7 @@ case $base_name in
         echo "Components: ${rpa_components}" >> ${base_dir}/conf/updates
         echo "Method: ${rpa}" >> ${base_dir}/conf/updates
         echo "VerifyRelease: blindtrust" >> ${base_dir}/conf/updates
-        if [ ${PPA_TYPE} == 'debian' ]; then
+        if [ x${PPA_TYPE} == 'xdebian' ]; then
             echo "FilterSrcList:install upstreamer.filter" >> ${base_dir}/conf/updates
         fi
         sed -i "s#Update:.*#Update: ${rpa_name}#"  ${base_dir}/conf/distributions

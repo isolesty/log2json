@@ -49,7 +49,7 @@ if [ -d "${repo_base}/rpa/${rpa_name}" ] && [ -d "${repo_www}/rpa/${rpa_name}" ]
     rpa_www_dir="${repo_www}/rpa/${rpa_name}"
 
     # rebuild this rpa
-    ${script_path}/create_rpa.sh 'update' ${rpa_name} ${rpa_www_dir}/checkupdate/result.json
+    ${script_path}/create_rpa.sh 'update' ${rpa_name}
 
 else
     _date=$(date +%Y-%m-%d~%H%M%S)

@@ -1,9 +1,12 @@
 #!/bin/bash
 
 Usage(){
-	echo "new.sh all base_repo_url base_repo_codename ppa_repo_url ppa_repo_codename"
+	echo "create_rpa.sh all base_repo_url base_repo_codename ppa_repo_url ppa_repo_codename"
 	echo "example:"
-	echo "new.sh all http://packages.deepin.com/deepin unstable http://packages.deepin.com/ppa/debian0311 unstable"
+	echo "create_rpa.sh all http://packages.deepin.com/deepin unstable http://packages.deepin.com/ppa/debian0311 unstable"
+	echo "create_rpa.sh update ppa_name"
+	echo "example:"
+	echo "create_rpa.sh update 00bea9df4e6c67331d9f79ce61a06983"
 }
 
 return_curl(){
@@ -21,8 +24,8 @@ find_dir(){
 
 	case $base_name in
 	    deepin)
-	        base_dir="/mnt/mirror-snapshot/reprepro-base/deepin-2015-process"
-	        www_dir="${repo_www}/deepin"
+	        base_dir=${deepin_base_dir}
+	        www_dir=${deepin_www_dir}
 	        ;;
 	    *)
 	        if [ -d ${repo_base}/${base_name} ] && [ -d ${repo_www}/${base_name} ];then
@@ -66,7 +69,7 @@ checkupdate(){
 	echo "Components: ${ppa_components}" >> ${base_dir}/conf/updates
 	echo "Method: ${ppa}" >> ${base_dir}/conf/updates
 
-	if [ ${PPA_TYPE} == 'debian' ]; then
+	if [ x${PPA_TYPE} == 'xdebian' ]; then
 		echo "FilterSrcList:install upstreamer.filter" >> ${base_dir}/conf/updates
 	fi
 	
@@ -74,8 +77,8 @@ checkupdate(){
 
 	sed -i "s#Update:.*#Update: ${ppa_name}#"  ${base_dir}/conf/distributions
 
-	cat ${base_dir}/conf/distributions
-	cat ${base_dir}/conf/updates
+	# cat ${base_dir}/conf/distributions
+	# cat ${base_dir}/conf/updates
 
 	reprepro --noskipold --basedir ${base_dir} --outdir ${www_dir} checkupdate | tee  ${_check_log}
 	/usr/bin/python3 ${script_path}/log2json.py ${_check_log} ${base} ${base_codename} ${ppa} ${ppa_codename}
@@ -145,7 +148,7 @@ merge_rpa(){
 	echo "Components: ${ppa_components}" >> ${base_dir}/conf/updates
 	echo "Method: ${ppa}" >> ${base_dir}/conf/updates
 
-	if [ ${PPA_TYPE} == 'debian' ]; then
+	if [ x${PPA_TYPE} == 'xdebian' ]; then
 		echo "FilterSrcList:install upstreamer.filter" >> ${base_dir}/conf/updates
 	fi
 	
@@ -153,8 +156,8 @@ merge_rpa(){
 
 	sed -i "s#Update:.*#Update: ${ppa_name}#"  ${base_dir}/conf/distributions
 
-	cat ${base_dir}/conf/distributions
-	cat ${base_dir}/conf/updates
+	# cat ${base_dir}/conf/distributions
+	# cat ${base_dir}/conf/updates
 
 	reprepro --noskipold --basedir ${base_dir} --outdir ${www_dir} update
 
@@ -179,6 +182,8 @@ script_path="/mnt/mirror-snapshot/utils"
 log_path="/mnt/mirror-snapshot/checkupdate-logs"
 repo_base="/srv/pool/base"
 repo_www="/srv/pool/www"
+deepin_base_dir="/mnt/mirror-snapshot/reprepro-base/deepin-2015-process"
+deepin_www_dir="${repo_www}/deepin"
 PPA_TYPE=''
 TYPE=''
 
@@ -212,7 +217,7 @@ elif [[ $1 == 'update' ]]; then
     	exit 1
 	fi
 	# result.json must be stored in this path
-	jsonfile="${repo_www}/rpa/${rpa_name}/checkupdate/result.json"
+	jsonfile="${repo_www}/rpa/${rpaname}/checkupdate/result.json"
 	base=$(python3 ${script_path}/parserjson.py ${jsonfile} 'base')
 	base_codename=$(python3 ${script_path}/parserjson.py ${jsonfile} 'basecodename')
 	ppa=$(python3 ${script_path}/parserjson.py ${jsonfile} 'update')
@@ -220,6 +225,7 @@ elif [[ $1 == 'update' ]]; then
 
 	base_name=$(basename ${base})
 	ppa_name=$(basename ${ppa})
+
 	if echo ${ppa_name} | grep debian >/dev/null 2>&1
 	then
 		PPA_TYPE="debian"
