@@ -98,6 +98,7 @@ create_rpa(){
 		exit 9
 	else
 		echo ${rpa_name}
+		bash ${script_path}/curl_back.sh rpa ${rpa_name} ${host_api} ${review_id}
 	fi
 }
 
@@ -112,6 +113,7 @@ update_rpa(){
 		exit 9
 	else
 		echo ${rpa_name}
+		bash ${script_path}/curl_back.sh rpa ${rpa_name} ${host_api} ${review_id}
 	fi
 }
 
@@ -186,12 +188,20 @@ deepin_base_dir="/mnt/mirror-snapshot/reprepro-base/deepin-2015-process"
 deepin_www_dir="${repo_www}/deepin"
 PPA_TYPE=''
 TYPE=''
+review_id=''
+host_api=''
+
 
 if [[ $1 == 'all' ]]; then
 	base=$2
 	base_codename=$3
 	ppa=$4
 	ppa_codename=$5
+	
+	if [[ $# == 7 ]];then
+		host_api=$6
+		review_id=$7
+	fi
 	
 
 	base_name=$(basename ${base})
@@ -212,6 +222,10 @@ if [[ $1 == 'all' ]]; then
 	diff_changelogs || exit 1
 elif [[ $1 == 'update' ]]; then
 	rpaname=$2
+	if [[ $# == 4 ]];then
+		host_api=$3
+		review_id=$4
+	fi
 	if [ x${rpaname} == 'x' ]; then
     	echo "rpa name not found."
     	exit 1
