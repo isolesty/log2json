@@ -98,7 +98,8 @@ create_rpa(){
 		exit 9
 	else
 		echo ${rpa_name}
-		bash ${script_path}/curl_back.sh rpa ${rpa_name} ${host_api} ${review_id}
+		# cwd will be deleted
+		cd /tmp && bash ${script_path}/curl_back.sh rpa ${rpa_name} ${host_api} ${review_id}
 	fi
 }
 
@@ -113,7 +114,8 @@ update_rpa(){
 		exit 9
 	else
 		echo ${rpa_name}
-		bash ${script_path}/curl_back.sh rpa ${rpa_name} ${host_api} ${review_id}
+		# cwd will be deleted
+		cd /tmp && bash ${script_path}/curl_back.sh rpa ${rpa_name} ${host_api} ${review_id}
 	fi
 }
 
