@@ -255,7 +255,7 @@ elif [[ $1 == 'update' ]]; then
 	checkupdate || exit 1
 	update_rpa || exit 1
 	diff_changelogs || exit 1
-	return_rr || exit 1
+	# return_rr || exit 1
 else
 	Usage
 fi
