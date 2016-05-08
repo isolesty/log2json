@@ -3,9 +3,16 @@
 return_curl(){
 	cmdres=$?
 	bash ${script_path}/curl_back.sh checkupdate ${cmdres} ${host_api} ${review_id} ${BUILD_URL} 
-    if [ -f ${base_dir}/conf/updates.orig ]; then
-        mv ${base_dir}/conf/updates.orig ${base_dir}/conf/updates
-    fi
+    # if [ -f ${base_dir}/conf/updates.orig ]; then
+    #     mv ${base_dir}/conf/updates.orig ${base_dir}/conf/updates
+    # fi
+    if [ -d ${conf_dir} ];then
+		# no dirs in conf_dir
+		cd ${conf_dir} && rm -f ./*
+		cd ../ && rmdir ${conf_dir}
+	else
+		exit 8
+	fi
 }
 trap return_curl EXIT
 
@@ -19,6 +26,7 @@ rpa=${RPA}
 rpa_codename=${RPA_CODENAME}
 host_api=${HOST_API}
 PPA_TYPE=''
+conf_dir=''
 
 base_name=$(basename ${base})
 rpa_name=$(basename ${rpa})
@@ -30,6 +38,8 @@ if echo ${rpa_name} | grep debian >/dev/null 2>&1
 then
     PPA_TYPE="debian"
 fi
+conf_dir="/tmp/create-${base_name}-${ppa_name}-${_date}"
+mkdir ${conf_dir}
 
 # use pools.corp instead of test.pacakges
 rpa=${rpa/'http://proposed.packages'/'http://pools.corp'}
@@ -83,29 +93,31 @@ else
 
     _check_log="${log_path}/${base_name}-check-${_date}.log"
 
-    cd ${base_dir}
+    # create a temp conf dir
+	cp -r ${base_dir}/conf ${conf_dir}
+	cd ${conf_dir}
     rpa_arch=$(/usr/bin/python3 ${script_path}/getrpa.py ${rpa} ${rpa_codename} "Architectures")
     rpa_components=$(/usr/bin/python3 ${script_path}/getrpa.py ${rpa} ${rpa_codename} "Components")
 
 
-    # rewrite conf/updates
-    mv conf/updates conf/updates.orig
-    echo "Name: ${rpa_name}" > ${base_dir}/conf/updates
-    echo "Suite: ${rpa_codename}" >> ${base_dir}/conf/updates
-    echo "Architectures: ${rpa_arch} source" >> ${base_dir}/conf/updates
-    echo "Components: ${rpa_components}" >> ${base_dir}/conf/updates
-    echo "Method: ${rpa}" >> ${base_dir}/conf/updates
+    # rewrite updates
+    mv updates updates.orig
+    echo "Name: ${rpa_name}" > updates
+    echo "Suite: ${rpa_codename}" >> updates
+    echo "Architectures: ${rpa_arch} source" >> updates
+    echo "Components: ${rpa_components}" >> updates
+    echo "Method: ${rpa}" >> updates
     if [ ${PPA_TYPE} == 'debian' ]; then
-        echo "FilterSrcList:install upstreamer.filter" >> ${base_dir}/conf/updates
+        echo "FilterSrcList:install upstreamer.filter" >> updates
     fi
-    echo "VerifyRelease: blindtrust" >> ${base_dir}/conf/updates
+    echo "VerifyRelease: blindtrust" >> updates
 
-    sed -i "s#Update:.*#Update: ${rpa_name}#"  ${base_dir}/conf/distributions
+    sed -i "s#Update:.*#Update: ${rpa_name}#"  distributions
 
-    cat ${base_dir}/conf/distributions
-    cat ${base_dir}/conf/updates
+    cat distributions
+    cat updates
 
-    reprepro --noskipold --basedir ${base_dir} --outdir ${www_dir} checkupdate | tee  ${_check_log}
+    reprepro --noskipold --basedir ${base_dir} --outdir ${www_dir} --confdir ${conf_dir} checkupdate | tee  ${_check_log}
     /usr/bin/python3 ${script_path}/log2json.py ${_check_log}
 
 	mkdir -p ${www_dir}/checkupdate/${_date}

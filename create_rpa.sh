@@ -11,9 +11,18 @@ Usage(){
 
 return_curl(){
 
-    if [ -f ${base_dir}/conf/updates.orig ]; then
-        mv ${base_dir}/conf/updates.orig ${base_dir}/conf/updates
-    fi
+    # if [ -f ${base_dir}/conf/updates.orig ]; then
+    #     mv ${base_dir}/conf/updates.orig ${base_dir}/conf/updates
+    # fi
+	
+	# conf_dir must be exist
+	if [ -d ${conf_dir} ];then
+		# no dirs in conf_dir
+		cd ${conf_dir} && rm -f ./*
+		cd ../ && rmdir ${conf_dir}
+	else
+		exit 8
+	fi
        
 }
 trap return_curl EXIT
@@ -55,32 +64,34 @@ find_dir(){
 checkupdate(){
 	_check_log=${log_path}/${base_name}-check-${_date}.log
 
-	cd ${base_dir}
+	# create a temp conf dir
+	cp -r ${base_dir}/conf ${conf_dir}
+	cd ${conf_dir}
 
 	ppa_arch=$(/usr/bin/python3 ${script_path}/getrpa.py ${ppa} ${ppa_codename} "Architectures")
 	ppa_components=$(/usr/bin/python3 ${script_path}/getrpa.py ${ppa} ${ppa_codename} "Components")
 
 
-	# rewrite conf/updates
-	mv conf/updates conf/updates.orig
-	echo "Name: ${ppa_name}" > ${base_dir}/conf/updates
-	echo "Suite: ${ppa_codename}" >> ${base_dir}/conf/updates
-	echo "Architectures: ${ppa_arch} source" >> ${base_dir}/conf/updates
-	echo "Components: ${ppa_components}" >> ${base_dir}/conf/updates
-	echo "Method: ${ppa}" >> ${base_dir}/conf/updates
+	# rewrite updates
+	mv updates updates.orig
+	echo "Name: ${ppa_name}" > updates
+	echo "Suite: ${ppa_codename}" >> updates
+	echo "Architectures: ${ppa_arch} source" >> updates
+	echo "Components: ${ppa_components}" >> updates
+	echo "Method: ${ppa}" >> updates
 
 	if [ x${PPA_TYPE} == 'xdebian' ]; then
-		echo "FilterSrcList:install upstreamer.filter" >> ${base_dir}/conf/updates
+		echo "FilterSrcList:install upstreamer.filter" >> updates
 	fi
 	
-	echo "VerifyRelease: blindtrust" >> ${base_dir}/conf/updates
+	echo "VerifyRelease: blindtrust" >> updates
 
-	sed -i "s#Update:.*#Update: ${ppa_name}#"  ${base_dir}/conf/distributions
+	sed -i "s#Update:.*#Update: ${ppa_name}#"  distributions
 
-	# cat ${base_dir}/conf/distributions
-	# cat ${base_dir}/conf/updates
+	# cat distributions
+	# cat updates
 
-	reprepro --noskipold --basedir ${base_dir} --outdir ${www_dir} checkupdate | tee  ${_check_log}
+	reprepro --noskipold --basedir ${base_dir} --outdir ${www_dir} --confdir ${conf_dir} checkupdate | tee  ${_check_log}
 	/usr/bin/python3 ${script_path}/log2json.py ${_check_log} ${base} ${base_codename} ${ppa} ${ppa_codename}
 
 	mkdir -p ${www_dir}/checkupdate/${_date}
@@ -138,32 +149,33 @@ diff_changelogs(){
 
 merge_rpa(){
 	#merge
-	cd ${base_dir}
+	cp -r ${base_dir}/conf ${conf_dir}
+	cd ${conf_dir}
 
 	ppa_arch=$(/usr/bin/python3 ${script_path}/getrpa.py ${ppa} ${ppa_codename} "Architectures")
 	ppa_components=$(/usr/bin/python3 ${script_path}/getrpa.py ${ppa} ${ppa_codename} "Components")
 
 
 	# rewrite conf/updates
-	mv conf/updates conf/updates.orig
-	echo "Name: ${ppa_name}" > ${base_dir}/conf/updates
-	echo "Suite: ${ppa_codename}" >> ${base_dir}/conf/updates
-	echo "Architectures: ${ppa_arch} source" >> ${base_dir}/conf/updates
-	echo "Components: ${ppa_components}" >> ${base_dir}/conf/updates
-	echo "Method: ${ppa}" >> ${base_dir}/conf/updates
+	mv updates updates.orig
+	echo "Name: ${ppa_name}" > updates
+	echo "Suite: ${ppa_codename}" >> updates
+	echo "Architectures: ${ppa_arch} source" >> updates
+	echo "Components: ${ppa_components}" >> updates
+	echo "Method: ${ppa}" >> updates
 
 	if [ x${PPA_TYPE} == 'xdebian' ]; then
-		echo "FilterSrcList:install upstreamer.filter" >> ${base_dir}/conf/updates
+		echo "FilterSrcList:install upstreamer.filter" >> updates
 	fi
 	
-	echo "VerifyRelease: blindtrust" >> ${base_dir}/conf/updates
+	echo "VerifyRelease: blindtrust" >> updates
 
-	sed -i "s#Update:.*#Update: ${ppa_name}#"  ${base_dir}/conf/distributions
+	sed -i "s#Update:.*#Update: ${ppa_name}#"  distributions
 
-	# cat ${base_dir}/conf/distributions
-	# cat ${base_dir}/conf/updates
+	# cat distributions
+	# cat updates
 
-	reprepro --noskipold --basedir ${base_dir} --outdir ${www_dir} update
+	reprepro --noskipold --basedir ${base_dir} --outdir ${www_dir} --confdir ${conf_dir} update
 
 	if [[ $? == 0 ]]; then
 		# get all result.json
@@ -176,6 +188,7 @@ merge_rpa(){
 		exit 8
 	fi
 }
+
 
 return_rr(){
 	cd /tmp && bash ${script_path}/curl_back.sh rpa ${rpa_name} ${host_api} ${review_id}
@@ -195,6 +208,7 @@ PPA_TYPE=''
 TYPE=''
 review_id=''
 host_api=''
+conf_dir=''
 
 
 if [[ $1 == 'all' ]]; then
@@ -215,6 +229,8 @@ if [[ $1 == 'all' ]]; then
 	then
 		PPA_TYPE="debian"
 	fi
+	conf_dir="/tmp/create-${base_name}-${ppa_name}-${_date}"
+	mkdir ${conf_dir}
 
 	
 	find_dir || exit 1
@@ -250,6 +266,8 @@ elif [[ $1 == 'update' ]]; then
 	then
 		PPA_TYPE="debian"
 	fi
+	conf_dir="/tmp/create-${base_name}-${ppa_name}-${_date}"
+	mkdir ${conf_dir}
 
 	find_dir || exit 1
 	checkupdate || exit 1
