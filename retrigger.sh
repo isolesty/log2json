@@ -2,7 +2,11 @@
 
 return_curl(){
 	cmdres=$?
-	bash ${script_path}/curl_back.sh checkupdate ${cmdres} ${host_api} ${review_id} ${BUILD_URL} 
+    # only return to rr if script failed
+    if [ ${cmdres} != '0' ];then
+        bash ${script_path}/curl_back.sh checkupdate ${cmdres} ${host_api} ${review_id} ${BUILD_URL} 
+    fi
+	
     # if [ -f ${base_dir}/conf/updates.orig ]; then
     #     mv ${base_dir}/conf/updates.orig ${base_dir}/conf/updates
     # fi
