@@ -63,7 +63,7 @@ if __name__ == '__main__':
                         debcomp = 'main'
                     else if 'pool/contrib/' in deburl[0]:
                         debcomp = 'contrib'
-                    else if 'pool/non-free/':
+                    else if 'pool/non-free/' in deburl[0]:
                         debcomp = 'non-free'
                     else:
                         debcomp = ''
@@ -102,7 +102,7 @@ if __name__ == '__main__':
                         debcomp = 'main'
                     else if 'pool/contrib/' in deburl[0]:
                         debcomp = 'contrib'
-                    else if 'pool/non-free/':
+                    else if 'pool/non-free/' in deburl[0]:
                         debcomp = 'non-free'
                     else:
                         debcomp = ''
