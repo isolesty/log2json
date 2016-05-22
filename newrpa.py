@@ -53,7 +53,7 @@ if __name__ == '__main__':
         # sometimes not any packages updated
         if not jsondetails:
             print("There is no packages updated in this checkupdate, exit.")
-            os._exit(1)
+            sys.exit(1)
 
         # download all files
         if len(sys.argv) == 4:
@@ -96,8 +96,21 @@ if __name__ == '__main__':
         dsccmd = 'find ' + TMPDIR + '/src/ -name "*.dsc" -exec reprepro -b ' + \
             rpapath + ' includedsc unstable {} \; >/dev/null 2>&1'
         os.system(dsccmd)
-        os.system("reprepro -b . includedeb unstable " +
-                  TMPDIR + "/deb/*.deb >/dev/null 2>&1")
+        # includedeb debs in its right component
+       for fileitem in jsondetails:
+            if fileitem['arch'] == 'source':
+                pass
+            else:
+                for x in fileitem['filelist']:
+                    debname = os.path.basename(x)
+                    # component
+                    if fileitem['component']:
+                        os.system("reprepro -b . -C " + fileitem['component'] + " includedeb unstable " + TMPDIR + "/deb/" + debname + " >/dev/null 2>&1")
+                    else:
+                        os.system("reprepro -b .  includedeb unstable " + TMPDIR + "/deb/" + debname + " >/dev/null 2>&1")
+
+        #os.system("reprepro -b . includedeb unstable " +
+        #         TMPDIR + "/deb/*.deb >/dev/null 2>&1")
 
         # to rpa
         basedir = "/srv/pool/base/rpa/" + rpaname

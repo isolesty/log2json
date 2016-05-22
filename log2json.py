@@ -59,6 +59,15 @@ if __name__ == '__main__':
                     debnewversion = debdata[1]
                     debrepo = debdata[2]
                     deburl = poolfilere.findall(fileline)[0].strip().split(' ')
+                    if 'pool/main/' in deburl[0]:
+                        debcomp = 'main'
+                    else if 'pool/contrib/' in deburl[0]:
+                        debcomp = 'contrib'
+                    else if 'pool/non-free/':
+                         debcomp = 'non-free'
+                    else:
+                        debcomp = ''
+
                     debarch = 'unknown'
                     if sourcere.findall(fileline):
                         debarch = 'source'
@@ -72,6 +81,7 @@ if __name__ == '__main__':
                         'oldversion': '0',
                         'newversion': debnewversion,
                         'repo': debrepo,
+                        'component': debcomp,
                         'filelist': deburl}
                     # multi arch have same _all.deb
                     if tojson in newdeb:
@@ -88,6 +98,14 @@ if __name__ == '__main__':
                     debnewversion = debdata[2]
                     debrepo = debdata[3]
                     deburl = poolfilere.findall(fileline)[0].strip().split(' ')
+                    if 'pool/main/' in deburl[0]:
+                        debcomp = 'main'
+                    else if 'pool/contrib/' in deburl[0]:
+                        debcomp = 'contrib'
+                    else if 'pool/non-free/':
+                         debcomp = 'non-free'
+                    else:
+                        debcomp = ''
                     debarch = 'unknown'
                     if sourcere.findall(fileline):
                         debarch = 'source'
@@ -101,6 +119,7 @@ if __name__ == '__main__':
                         'oldversion': deboldversion,
                         'newversion': debnewversion,
                         'repo': debrepo,
+                        'component': debcomp,
                         'filelist': deburl}
                     # multi arch have same _all.deb
                     if tojson in updatedeb:
