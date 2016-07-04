@@ -97,7 +97,7 @@ if __name__ == '__main__':
             rpapath + ' includedsc unstable {} \; >/dev/null 2>&1'
         os.system(dsccmd)
         # includedeb debs in its right component
-       for fileitem in jsondetails:
+        for fileitem in jsondetails:
             if fileitem['arch'] == 'source':
                 pass
             else:

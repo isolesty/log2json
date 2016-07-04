@@ -98,7 +98,7 @@ checkupdate(){
 	# mkdir -p ${www_dir}/checkupdate/${review_id}
 	# ln -s ${www_dir}/checkupdate/${_date} ${www_dir}/checkupdate/${review_id}/${_date}
 	cp  ${script_path}/index.html ${www_dir}/checkupdate/${_date}/
-	mv ${base_dir}/*.json ${www_dir}/checkupdate/${_date}/result.json
+	mv ${conf_dir}/*.json ${www_dir}/checkupdate/${_date}/result.json
 }
 # checkupdate end
 
@@ -146,6 +146,64 @@ diff_changelogs(){
 	rm ${rpa_www_dir}/pool/diffchangelogs.py
 }
 
+# added by Choldrim
+backup_checkupdate_hist(){
+    set -x
+    rpa_checkupdate_hist="/tmp/checkupdate_hist/${rpaname}"
+    rm -rfv ${rpa_checkupdate_hist}
+    mkdir -pv ${rpa_checkupdate_hist}
+	rpa_www_dir="${repo_www}/rpa/${rpaname}"
+    cp -rv ${rpa_www_dir}/checkupdate ${rpa_checkupdate_hist}/
+}
+
+
+# added by Choldrim
+restore_checkupdate_hist(){
+    cd ${rpa_checkupdate_hist}/checkupdate/
+ 
+    if [ -f ${patch_set_file_name} ];then
+        latest_patch_set=$(cat ${patch_set_file_name})
+        for((i=0;i<=${latest_patch_set};i++));do
+            cp -rv $i ${rpa_www_dir}/checkupdate
+        done
+    fi
+
+    cp -v ${patch_set_file_name} ${rpa_www_dir}/checkupdate
+
+    rm -rf ${rpa_checkupdate_hist}
+
+    cd -
+}
+
+
+# added by Choldrim
+archive_with_patch_set(){
+    echo "start archive data.json with patch set"
+
+    cd ${rpa_www_dir}/checkupdate/
+
+    next_patch_set=0
+
+    # get latest patch set num
+    # if latestPatchSet file not found, gen and echo init num into it
+    if [ ! -f ${patch_set_file_name} ];then
+        echo 0 > ${patch_set_file_name}
+    else
+        latest_patch_set=$(cat ${patch_set_file_name})
+        next_patch_set=$(($latest_patch_set + 1))
+    fi
+
+    # archive
+    mkdir -pv $next_patch_set
+    mv -v data.json $next_patch_set/
+    ln -sf $next_patch_set/data.json data.json
+
+    # write back the next patch set num
+    echo $next_patch_set  > $patch_set_file_name
+
+    cd -
+    set +x
+}
 
 merge_rpa(){
 	#merge
@@ -209,6 +267,7 @@ TYPE=''
 review_id=''
 host_api=''
 conf_dir=''
+patch_set_file_name='latestPatchSet'
 
 
 if [[ $1 == 'all' ]]; then
@@ -230,7 +289,7 @@ if [[ $1 == 'all' ]]; then
 		PPA_TYPE="debian"
 	fi
 	conf_dir="/tmp/create-${base_name}-${ppa_name}-${_date}"
-	mkdir ${conf_dir}
+#	mkdir ${conf_dir}
 
 	
 	find_dir || exit 1
@@ -241,6 +300,7 @@ if [[ $1 == 'all' ]]; then
 		create_rpa || exit 1	
 	fi
 	diff_changelogs || exit 1
+    archive_with_patch_set || exit 1
 	return_rr || exit 1
 elif [[ $1 == 'update' ]]; then
 	rpaname=$2
@@ -267,12 +327,15 @@ elif [[ $1 == 'update' ]]; then
 		PPA_TYPE="debian"
 	fi
 	conf_dir="/tmp/create-${base_name}-${ppa_name}-${_date}"
-	mkdir ${conf_dir}
+	#mkdir ${conf_dir}
 
+    backup_checkupdate_hist || exit 1
 	find_dir || exit 1
 	checkupdate || exit 1
 	update_rpa || exit 1
 	diff_changelogs || exit 1
+    restore_checkupdate_hist || exit 1
+    archive_with_patch_set || exit 1
 	return_rr || exit 1
 else
 	Usage
