@@ -3,6 +3,7 @@
 import sys
 import json
 import os
+import subprocess
 
 from urllib.request import urlopen
 
@@ -24,6 +25,88 @@ def log_print(output):
 def gen_md5(str):
     md5str = hashlib.md5(str.encode(encoding='utf-8'))
     return md5str.hexdigest()
+
+
+def get_deb_details(filepath):
+    """Show the control details of deb file.
+    depends on dpkg-deb
+    filepath: str
+    return: str
+    TODO: read one deb file only once
+    """
+    return os.popen('dpkg-deb -f %s' % filepath).read()
+
+
+def get_filestats(filepath):
+    # already chdir to the download path
+    filename = os.path.basename(filepath)
+
+    filesize = os.path.getsize(filename)
+    try:
+        filemd5 = subprocess.check_output(
+            "md5sum " + filename + " | awk '{print $1}'", shell=True)
+    except subprocess.CalledProcessError as e:
+        raise e
+
+    return filesize, filemd5.strip().decode('utf-8')
+
+
+def gen_changesfile(OneSource):
+    changesfile = '''
+Source: {0}
+Binary: {1}
+Architecture: {2}
+Version: {3}
+Distribution: {4}
+Files:
+{5}
+'''.format(OneSource.source,
+           OneSource.binary,
+           OneSource.arch,
+           OneSource.version,
+           OneSource.distribution,
+           OneSource.files)
+
+    with open(OneSource.source + ".changes", 'w') as f:
+        f.write(changesfile)
+
+
+class OneSource(object):
+    """Pacakges of Source"""
+
+    def __init__(self, source, version, distribution):
+        super(OneSource, self).__init__()
+        self.source = source
+        self.binary = ''
+        self.arch = ''
+        self.version = version
+        self.distribution = distribution
+        self.files = []
+        self.section = ''
+        self.priority = ''
+
+    def _set_binary(self, binary):
+        self.binary = self.binary + ' ' + binary
+
+    def _set_details(self, section, priority):
+        self.section = section
+        self.priority = priority
+
+    def _set_arch(self, arch):
+        if arch in self.arch:
+            pass
+        else:
+            self.arch = self.arch + " " + arch
+
+    def _set_files(self, filename, filemd5, filesize):
+        if self.section and self.priority:
+            # in .changes file, each line start with a blank in "Files:" field
+            filestat = " " + filemd5 + " " + filesize + " " + \
+                self.section + " " + self.priority + " " + filename
+            self.files.append(filestat)
+        else:
+            raise("Must set section and priority first.")
+
 
 if __name__ == '__main__':
     # usage:
@@ -105,11 +188,13 @@ if __name__ == '__main__':
                     debname = os.path.basename(x)
                     # component
                     if fileitem['component']:
-                        os.system("reprepro -b . -C " + fileitem['component'] + " includedeb unstable " + TMPDIR + "/deb/" + debname + " >/dev/null 2>&1")
+                        os.system("reprepro -b . -C " + fileitem[
+                                  'component'] + " includedeb unstable " + TMPDIR + "/deb/" + debname + " >/dev/null 2>&1")
                     else:
-                        os.system("reprepro -b .  includedeb unstable " + TMPDIR + "/deb/" + debname + " >/dev/null 2>&1")
+                        os.system("reprepro -b .  includedeb unstable " +
+                                  TMPDIR + "/deb/" + debname + " >/dev/null 2>&1")
 
-        #os.system("reprepro -b . includedeb unstable " +
+        # os.system("reprepro -b . includedeb unstable " +
         #         TMPDIR + "/deb/*.deb >/dev/null 2>&1")
 
         # to rpa
