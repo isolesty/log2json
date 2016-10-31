@@ -4,6 +4,7 @@ import sys
 import json
 import os
 import subprocess
+import re
 
 from urllib.request import urlopen
 
@@ -31,16 +32,24 @@ def get_deb_details(filepath):
     """Show the control details of deb file.
     depends on dpkg-deb
     filepath: str
-    return: str
+    return: str str str
     TODO: read one deb file only once
     """
-    return os.popen('dpkg-deb -f %s' % filepath).read()
+    controlfile = os.popen('dpkg-deb -f %s' % filepath).readlines()
+    for line in controlfile:
+        line = line.strip()
+        if line.startswith("Package: "):
+            debname = line[9:]
+        if line.startswith("Section: "):
+            section = line[9:]
+        if line.startswith("Priority: "):
+            priority = line[10:]
+
+    return debname, section, priority
 
 
-def get_filestats(filepath):
+def get_filestats(filename):
     # already chdir to the download path
-    filename = os.path.basename(filepath)
-
     filesize = os.path.getsize(filename)
     try:
         filemd5 = subprocess.check_output(
@@ -51,39 +60,112 @@ def get_filestats(filepath):
     return filesize, filemd5.strip().decode('utf-8')
 
 
-def gen_changesfile(OneSource):
-    changesfile = '''
-Source: {0}
+def gen_changesfile(Source):
+    # OneSource.files is a list
+    files = ''
+    # section and priority may be wrong
+    for filestat in Source.files:
+        files = files + \
+            filestat.replace('section', Source.section).replace(
+                'priority', Source.priority) + "\n"
+
+    changescontent = '''Source: {0}
 Binary: {1}
 Architecture: {2}
 Version: {3}
 Distribution: {4}
 Files:
 {5}
-'''.format(OneSource.source,
-           OneSource.binary,
-           OneSource.arch,
-           OneSource.version,
-           OneSource.distribution,
-           OneSource.files)
+'''.format(Source.source,
+           Source.binary,
+           Source.arch,
+           Source.version,
+           Source.distribution,
+           files)
 
-    with open(OneSource.source + ".changes", 'w') as f:
-        f.write(changesfile)
+    return Source.source, changescontent
+
+
+def search_source(OneSourcelist, name):
+    for onesource in OneSourcelist:
+        if name == onesource.source:
+            return onesource
+
+    return 0
+
+
+def gen_source(itemlist):
+    sourcelist = []
+    # from jsondetails to OneSource list
+    sourcere = re.compile(".*/\w/(.*)/.*")
+    for item in itemlist:
+        source = sourcere.findall(item['filelist'][0])[0]
+        thissource = search_source(sourcelist, source)
+        # a known source
+        if thissource:
+            thissource._set_arch(item['arch'])
+
+            if item['arch'] == 'source':
+                pass
+            else:
+                # one deb file is enough
+                debname, section, priority = get_deb_details(
+                    os.path.basename(item['filelist'][0]))
+
+                thissource._set_binary(debname)
+                # section is default value
+                if thissource.section == 'section':
+                    thissource._set_details(section, priority)
+
+            for filepath in item['filelist']:
+                filename = os.path.basename(filepath)
+                filesize, filemd5 = get_filestats(filename)
+                thissource._set_files(filename, filesize, filemd5)
+
+        else:
+            newsource = OneSource(source)
+            newsource._set_arch(item['arch'])
+            newsource._set_version(item['newversion'])
+
+            if item['arch'] == 'source':
+                pass
+            else:
+                # one deb file is enough
+                debname, section, priority = get_deb_details(
+                    os.path.basename(item['filelist'][0]))
+
+                newsource._set_binary(debname)
+                newsource._set_details(section, priority)
+
+            for filepath in item['filelist']:
+                filename = os.path.basename(filepath)
+                filesize, filemd5 = get_filestats(filename)
+                newsource._set_files(filename, filesize, filemd5)
+
+            sourcelist.append(newsource)
+
+    return sourcelist
 
 
 class OneSource(object):
     """Pacakges of Source"""
 
-    def __init__(self, source, version, distribution):
+    def __init__(self, source):
         super(OneSource, self).__init__()
         self.source = source
         self.binary = ''
         self.arch = ''
-        self.version = version
-        self.distribution = distribution
+        self.version = ''
+        self.distribution = 'unstable'
         self.files = []
-        self.section = ''
-        self.priority = ''
+        self.section = 'section'
+        self.priority = 'priority'
+
+    def _set_version(self, version):
+        self.version = version
+
+    def _set_dist(self, distribution):
+        self.distribution = distribution
 
     def _set_binary(self, binary):
         self.binary = self.binary + ' ' + binary
@@ -98,14 +180,11 @@ class OneSource(object):
         else:
             self.arch = self.arch + " " + arch
 
-    def _set_files(self, filename, filemd5, filesize):
-        if self.section and self.priority:
-            # in .changes file, each line start with a blank in "Files:" field
-            filestat = " " + filemd5 + " " + filesize + " " + \
-                self.section + " " + self.priority + " " + filename
-            self.files.append(filestat)
-        else:
-            raise("Must set section and priority first.")
+    def _set_files(self, filename, filesize, filemd5):
+        # in .changes file, each line start with a blank in "Files:" field
+        filestat = " " + filemd5 + " " + str(filesize) + " " + \
+            self.section + " " + self.priority + " " + filename
+        self.files.append(filestat)
 
 
 if __name__ == '__main__':
@@ -152,47 +231,33 @@ if __name__ == '__main__':
 
         os.mkdir(TMPDIR)
         os.chdir(TMPDIR)
-        os.mkdir("src")
-        os.mkdir("deb")
+        # os.mkdir("src")
+        # os.mkdir("deb")
 
+        # download all files
         for fileitem in jsondetails:
-            if fileitem['arch'] == 'source':
-                for x in fileitem['filelist']:
-                    fileurl = baseurl + "/" + x
-                    log_print(fileurl)
-                    g = urlopen(fileurl)
-                    with open("src/" + os.path.basename(x), 'b+w') as f:
-                        f.write(g.read())
-            else:
-                for x in fileitem['filelist']:
-                    fileurl = baseurl + "/" + x
-                    log_print(fileurl)
-                    g = urlopen(fileurl)
-                    with open("deb/" + os.path.basename(x), 'b+w') as f:
-                        f.write(g.read())
+            for x in fileitem['filelist']:
+                fileurl = baseurl + "/" + x
+                log_print(fileurl)
+                g = urlopen(fileurl)
+                with open(os.path.basename(x), 'b+w') as f:
+                    f.write(g.read())
+        # generate .changes files
+        sourcelist = gen_source(jsondetails)
+        for item in sourcelist:
+            name, content = gen_changesfile(item)
+            with open(name + ".changes", 'w') as f:
+                f.write(content)
 
-        # make a new rpa from template
+            # make a new rpa from template
         os.system("cp -r " + SCRIPTPATH + "/rpabase " + rpapath)
         # os.system("cp -r /tmp/rpabase " + rpapath)
         os.chdir(rpapath)
-        # includedsc only one .dsc file each time
-        dsccmd = 'find ' + TMPDIR + '/src/ -name "*.dsc" -exec reprepro -b ' + \
-            rpapath + ' includedsc unstable {} \; >/dev/null 2>&1'
-        os.system(dsccmd)
-        # includedeb debs in its right component
-        for fileitem in jsondetails:
-            if fileitem['arch'] == 'source':
-                pass
-            else:
-                for x in fileitem['filelist']:
-                    debname = os.path.basename(x)
-                    # component
-                    if fileitem['component']:
-                        os.system("reprepro -b . -C " + fileitem[
-                                  'component'] + " includedeb unstable " + TMPDIR + "/deb/" + debname + " >/dev/null 2>&1")
-                    else:
-                        os.system("reprepro -b .  includedeb unstable " +
-                                  TMPDIR + "/deb/" + debname + " >/dev/null 2>&1")
+        # include *.changes
+        changescmd = 'find ' + TMPDIR + '/ -name "*.changes" -exec' + \
+            ' reprepro -b ' + rpapath + \
+            ' --ignore=missingfield include unstable {} \; >/dev/null 2>&1'
+        os.system(changescmd)
 
         # os.system("reprepro -b . includedeb unstable " +
         #         TMPDIR + "/deb/*.deb >/dev/null 2>&1")
