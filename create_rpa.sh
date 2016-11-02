@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -x
 Usage(){
 	echo "create_rpa.sh all base_repo_url base_repo_codename ppa_repo_url ppa_repo_codename"
 	echo "example:"
@@ -249,8 +249,24 @@ merge_rpa(){
 
 
 return_rr(){
-	cd /tmp && bash ${script_path}/curl_back.sh rpa ${rpa_name} ${host_api} ${review_id}
+	cd /tmp && bash ${script_path}/curl_back.sh rpa ${rpa_name} ${host_api} ${review_id} ${BUILD_URL}
 }
+
+
+find_rpa(){
+	# a rpa has only one result.json
+	old_rpa=$(find ${repo_www}/rpa -ctime -3 -name 'result.json' -exec grep -H ${ppa} {} \; | awk -F : '{print $1}')
+	# a related rpa exist
+	if [[ x${old_rpa} != 'x' ]]; then
+		# result_json example: /srv/pool/www/rpa/984131bd34b0f3c55da465a5d13850e8/checkupdate/result.json
+		result_json=(${old_rpa//// })
+		rpa_name=${result_json[4]}
+		return_rr || exit 1
+		exit 0
+	fi
+
+}
+
 # new.sh all base_repo_url base_repo_codename ppa_repo_url ppa_repo_codename
 # example:
 # new.sh all http://packages.deepin.com/deepin unstable http://packages.deepin.com/ppa/debian0311 unstable
@@ -276,9 +292,10 @@ if [[ $1 == 'all' ]]; then
 	ppa=$4
 	ppa_codename=$5
 	
-	if [[ $# == 7 ]];then
+	if [[ $# == 8 ]];then
 		host_api=$6
 		review_id=$7
+		BUILD_URL=$8
 	fi
 	
 
@@ -291,7 +308,8 @@ if [[ $1 == 'all' ]]; then
 	conf_dir="/tmp/create-${base_name}-${ppa_name}-${_date}"
 #	mkdir ${conf_dir}
 
-	
+	find_rpa
+
 	find_dir || exit 1
 	if [[ ${TYPE} == "rpa" ]]; then
 		merge_rpa || exit 1
@@ -300,8 +318,12 @@ if [[ $1 == 'all' ]]; then
 		create_rpa || exit 1	
 	fi
 	diff_changelogs || exit 1
-    archive_with_patch_set || exit 1
-	return_rr || exit 1
+    
+    if [[ $# == 8 ]];then
+    	archive_with_patch_set || exit 1
+    	return_rr || exit 1
+    fi
+
 elif [[ $1 == 'update' ]]; then
 	rpaname=$2
 	if [[ $# == 4 ]];then
@@ -310,7 +332,7 @@ elif [[ $1 == 'update' ]]; then
 	fi
 	if [ x${rpaname} == 'x' ]; then
     	echo "rpa name not found."
-    	exit 1
+    	exit 2
 	fi
 	# result.json must be stored in this path
 	jsonfile="${repo_www}/rpa/${rpaname}/checkupdate/result.json"
