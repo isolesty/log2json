@@ -97,7 +97,7 @@ def search_source(OneSourcelist, name):
 def gen_source(itemlist):
     sourcelist = []
     # from jsondetails to OneSource list
-    sourcere = re.compile(".*/\w/(.*)/.*")
+    sourcere = re.compile(".*/\w+/(.*)/.*")
     for item in itemlist:
         source = sourcere.findall(item['filelist'][0])[0]
         thissource = search_source(sourcelist, source)
