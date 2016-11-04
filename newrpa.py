@@ -257,7 +257,10 @@ if __name__ == '__main__':
         changescmd = 'find ' + TMPDIR + '/ -name "*.changes" -exec' + \
             ' reprepro -b ' + rpapath + \
             ' --ignore=missingfield include unstable {} \; >/dev/null 2>&1'
-        os.system(changescmd)
+        try:
+            subprocess.check_output(changescmd, shell=True)
+        except subprocess.CalledProcessError as e:
+            print(e.output)
 
         # os.system("reprepro -b . includedeb unstable " +
         #         TMPDIR + "/deb/*.deb >/dev/null 2>&1")
