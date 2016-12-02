@@ -131,14 +131,54 @@ class Source(object):
         self.priority = priority
 
     def _set_distro(self, distro):
+        '''
+        Get soruce distro from debs if distro is set to ''
+        '''
+        if not distro:
+            if not self.mindeb.changelog:
+                self.mindeb.get_changelog()
+
+            distrore = re.compile(r'.* (\w+); urgency')
+            distro = re.findall(distrore, self.mindeb.changelog)[0]
+
         self.distribution = distro
 
-    def _set_changelogdiff(self, diff):
+    # TODO: diff from versions of changelog
+    # may be set distro in this function is a good choice?
+    def _set_changelogdiff(self):
+        # a new source
+        if self.oldversion == '0':
+            diff = self.mindeb.changelog
+        else:
+            oldstr = self.name + ' (' + self.oldversion + ') '
+
+            # old version not in changelog, maybe step over some versions?
+            header_pattern = re.compile(r'.*;.*urgency=.*\n+')
+            changelogs = header_pattern.split(self.mindeb.changelog)
+            headers = header_pattern.findall(self.mindeb.changelog)
+
+            diff = ''
+            # show max 5 changelog items
+            for x in range(0, len(headers)):
+                if oldstr in headers[x]:
+                    break
+                elif x > 4:
+                    break
+                else:
+                    diff = diff + headers[x] + changelogs[x + 1]
+
         self.changelogdiff = diff
 
     def _set_minsize(self, deb):
-        if self.minsize > deb['filesize']:
-            self.minsize = deb['filesize']
+        # some debs don't have changelogs
+        if deb.changelogpath == '':
+            pass
+        # the first deb of this source
+        elif self.minsize == 0:
+            self.minsize = deb.filesize
+            self.mindeb = deb
+        elif self.minsize > deb.filesize:
+            self.minsize = deb.filesize
             self.mindeb = deb
 
     def _set_commitlog(self):
@@ -148,8 +188,12 @@ class Source(object):
 
         self.commitlog = commits
 
+    # TODO: Many things to do in this
     def add_debs(self, deb):
-        self.debs.append({deb['name']: deb})
+        self.debs[deb.name] = deb
+        self._set_arch(deb.arch)
+        self._set_details(deb.section, deb.priority)
+        self._set_minsize(deb)
 
 
 ####
@@ -166,23 +210,27 @@ class Deb(object):
         # informations from dpkg-deb -f
         self.name = ''
         self.arch = ''
+        self.version = ''
         # Installed size
         self.installedsize = 0
         self.section = ''
         self.priority = ''
 
-        # changelogs information from dpkg-deb -c
-        self.changelogpath = ''
-
         # file's stats
         self.filesize = 0
         self.md5 = ''
 
+        # changelogs information from dpkg-deb -c
+        self.changelogpath = ''
+
         self.changelog = ''
 
     def init_deb(self):
+        # initial all deb's information
+        # only one deb in one Source should get changelogs
         self._set_stats()
         self._set_details()
+        self.get_changelog_path()
 
     def _set_details(self):
         # get information from dpkg-deb -f
@@ -191,6 +239,8 @@ class Deb(object):
             line = line.strip()
             if line.startswith("Package: "):
                 self.name = line[9:]
+            if line.startswith("Version: "):
+                self.version = line[9:]
             if line.startswith("Architecture: "):
                 self.arch = line[14:]
             if line.startswith("Installed-Size: "):
@@ -208,19 +258,21 @@ class Deb(object):
     def get_changelog_path(self):
         """Get a deb's changelog path in deb.
         depends on dpkg-deb, grep, awk
+
+        some deb files contain multi changelog files, only one is useful
+        example:
+        ./usr/share/doc/python3.5/changelog.Debian.gz
+        ./usr/share/doc/python3.5/changelog.gz -> NEWS.gz
+        and another
+        ./usr/share/doc/vim-common/changelog.gz
+        ./usr/share/doc/vim-common/changelog.Debian.gz
+        filepath="./usr/share/doc/vim-common/changelog.gz\n./usr/share/doc/vim-common/changelog.Debian.gz"
         """
-        # some deb files contain multi changelog files, only one is useful
-        # example:
-        # -rw-r--r-- root/root     38974 2016-01-13 23:09 ./usr/share/doc/python3.5/changelog.Debian.gz
-        # lrwxrwxrwx root/root         0 2016-01-14 02:55 ./usr/share/doc/python3.5/changelog.gz -> NEWS.gz
-        # and another
-        # -rw-r--r-- root/root     23459 2015-12-10 12:32 ./usr/share/doc/vim-common/changelog.gz
-        # -rw-r--r-- root/root     84110 2016-01-25 10:25 ./usr/share/doc/vim-common/changelog.Debian.gz
-        # filepath="./usr/share/doc/vim-common/changelog.gz\n./usr/share/doc/vim-common/changelog.Debian.gz"
 
         # changelog*.gz always in usr/share/doc/
         cmd = "dpkg-deb -c " + self.filename + \
-            " | grep -i changelog | grep 'usr/share/doc' | awk '$3!=0{print $6;}'"
+            " | grep -i changelog | grep 'usr/share/doc'" + \
+            " | awk '$3!=0{print $6;}'"
         # strip the \n in filepath
         # TODO: another method to find out the changelog path
         filepath = os.popen(cmd).read().strip().split('\n')
