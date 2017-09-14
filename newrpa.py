@@ -98,8 +98,10 @@ def gen_source(itemlist):
     sourcelist = []
     # from jsondetails to OneSource list
     sourcere = re.compile(".*/\w+/(.*)/.*")
+    componentre = re.compile(".*/(.*)/.*/.*/.*")
     for item in itemlist:
         source = sourcere.findall(item['filelist'][0])[0]
+        component = componentre.findall(item['filelist'][0])[0]
         thissource = search_source(sourcelist, source)
         # a known source
         if thissource:
@@ -115,7 +117,7 @@ def gen_source(itemlist):
                 thissource._set_binary(debname)
                 # section is default value
                 if thissource.section == 'section':
-                    thissource._set_details(section, priority)
+                    thissource._set_details(section, priority, component)
 
             for filepath in item['filelist']:
                 filename = os.path.basename(filepath)
@@ -170,8 +172,8 @@ class OneSource(object):
     def _set_binary(self, binary):
         self.binary = self.binary + ' ' + binary
 
-    def _set_details(self, section, priority):
-        self.section = section
+    def _set_details(self, section, priority, component):
+        self.section = component + '/' + section
         self.priority = priority
 
     def _set_arch(self, arch):
@@ -249,7 +251,7 @@ if __name__ == '__main__':
             with open(name + ".changes", 'w') as f:
                 f.write(content)
 
-            # make a new rpa from template
+        # make a new rpa from template
         os.system("cp -r " + SCRIPTPATH + "/rpabase " + rpapath)
         # os.system("cp -r /tmp/rpabase " + rpapath)
         os.chdir(rpapath)
