@@ -20,8 +20,6 @@ return_curl(){
 		# no dirs in conf_dir
 		cd ${conf_dir} && rm -f ./*
 		cd ../ && rmdir ${conf_dir}
-	else
-		exit 8
 	fi
        
 }
@@ -255,7 +253,7 @@ return_rr(){
 
 find_rpa(){
 	# a rpa has only one result.json
-	old_rpa=$(find ${repo_www}/rpa -ctime -3 -name 'result.json' -exec grep -H ${ppa} {} \; | awk -F : '{print $1}')
+	old_rpa=$(find ${repo_www}/rpa -ctime -1 -name 'result.json' -exec grep -H ${ppa} {} \; | awk -F : '{print $1}')
 	# a related rpa exist
 	if [[ x${old_rpa} != 'x' ]]; then
 		# result_json example: /srv/pool/www/rpa/984131bd34b0f3c55da465a5d13850e8/checkupdate/result.json
@@ -266,6 +264,13 @@ find_rpa(){
 	fi
 
 }
+
+
+output_reuslt(){
+	echo "changelist 地址"
+	echo "http://pools.corp.deepin.com/rpa/${rpa_name}/checkupdate/"
+}
+
 
 # new.sh all base_repo_url base_repo_codename ppa_repo_url ppa_repo_codename
 # example:
@@ -318,9 +323,12 @@ if [[ $1 == 'all' ]]; then
 		create_rpa || exit 1	
 	fi
 	diff_changelogs || exit 1
-    
-    if [[ $# == 8 ]];then
-    	archive_with_patch_set || exit 1
+
+	archive_with_patch_set || exit 1
+
+	output_reuslt || exit 1
+
+	if [[ $# == 8 ]];then	
     	return_rr || exit 1
     fi
 

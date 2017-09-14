@@ -146,8 +146,11 @@ class Source(object):
     # TODO: diff from versions of changelog
     # may be set distro in this function is a good choice?
     def _set_changelogdiff(self):
+        # not changelogs in mindeb
+        if not self.mindeb.changelog:
+            diff = 'No changlog found.'
         # a new source
-        if self.oldversion == '0':
+        elif self.oldversion == '0':
             diff = self.mindeb.changelog
         else:
             oldstr = self.name + ' (' + self.oldversion + ') '
@@ -303,8 +306,8 @@ class Deb(object):
         depends on dpkg-deb, zcat
         return changelogs: str
         """
-        # create tmp dir
         if self.changelogpath:
+            # create tmp dir
             randomstr = gen_randomstr(10)
             TMPDIR = '/tmp/diffchangelog-' + randomstr
 
@@ -326,4 +329,4 @@ class Deb(object):
             if changelogs:
                 self.changelog = changelogs
         else:
-            self.changelog = "No changlog found."
+            self.changelog = ''
