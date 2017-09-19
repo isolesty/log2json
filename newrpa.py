@@ -130,14 +130,19 @@ def gen_source(itemlist):
             newsource._set_version(item['newversion'])
 
             if item['arch'] == 'source':
-                pass
+                # get informations in *.dsc
+                section = subprocess.check_output(["sed -n '/Package-List:/{n;p}' " +
+                                                   source + "*.dsc | awk '{print $3}'"], shell=True).strip().decode('utf-8')
+                priority = subprocess.check_output(["sed -n '/Package-List:/{n;p}' " +
+                                                    source + "*.dsc | awk '{print $4}'"], shell=True).strip().decode('utf-8')
+                newsource._set_details(section, priority, component)
             else:
                 # one deb file is enough
                 debname, section, priority = get_deb_details(
                     os.path.basename(item['filelist'][0]))
 
                 newsource._set_binary(debname)
-                newsource._set_details(section, priority)
+                newsource._set_details(section, priority, component)
 
             for filepath in item['filelist']:
                 filename = os.path.basename(filepath)
@@ -173,7 +178,11 @@ class OneSource(object):
         self.binary = self.binary + ' ' + binary
 
     def _set_details(self, section, priority, component):
-        self.section = component + '/' + section
+        # some seciton in dsc is non-free/utils
+        if component in section:
+            self.section = section
+        else:
+            self.section = component + '/' + section
         self.priority = priority
 
     def _set_arch(self, arch):
@@ -227,7 +236,9 @@ if __name__ == '__main__':
                 baseurl + datetime.now().strftime("%Y-%m-%d~%H%M%S"))
 
         rpapath = "/tmp/" + rpaname
+        # rpapath = "./" + rpaname
         TMPDIR = "/tmp/rpa-" + rpaname
+        # TMPDIR = "./rpa-" + rpaname
 
         log_print(TMPDIR)
 
@@ -253,12 +264,12 @@ if __name__ == '__main__':
 
         # make a new rpa from template
         os.system("cp -r " + SCRIPTPATH + "/rpabase " + rpapath)
-        # os.system("cp -r /tmp/rpabase " + rpapath)
+
         os.chdir(rpapath)
         # include *.changes
         changescmd = 'find ' + TMPDIR + '/ -name "*.changes" -exec' + \
             ' reprepro -b ' + rpapath + \
-            ' --ignore=missingfield include unstable {} \; >/dev/null 2>&1'
+            ' --ignore=missingfield --ignore=wrongsourceversion include unstable {} \; >/dev/null 2>&1'
         try:
             subprocess.check_output(changescmd, shell=True)
         except subprocess.CalledProcessError as e:
