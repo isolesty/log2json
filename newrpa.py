@@ -132,9 +132,9 @@ def gen_source(itemlist):
             if item['arch'] == 'source':
                 # get information in *.dsc
                 section = subprocess.check_output(["sed -n '/Package-List:/{n;p}' " +
-                                                   source + "*.dsc | awk '{print $3}'"], shell=True).strip().decode('utf-8')
+                                                   source + "_*.dsc | awk '{print $3}'"], shell=True).strip().decode('utf-8')
                 priority = subprocess.check_output(["sed -n '/Package-List:/{n;p}' " +
-                                                    source + "*.dsc | awk '{print $4}'"], shell=True).strip().decode('utf-8')
+                                                    source + "_*.dsc | awk '{print $4}'"], shell=True).strip().decode('utf-8')
                 newsource._set_details(section, priority, component)
             else:
                 # one deb file is enough
